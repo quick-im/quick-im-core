@@ -2,10 +2,14 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
+	"github.com/quick-im/quick-im-core/internal/tracing"
+	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
 	"github.com/quick-im/quick-im-core/services/msgid"
 	"github.com/smallnest/rpcx/client"
+	"go.opentelemetry.io/otel"
 )
 
 func TestServer(t *testing.T) {
@@ -15,12 +19,21 @@ func TestServer(t *testing.T) {
 	}
 	xclient := client.NewXClient(msgid.SERVER_NAME, client.Failtry, client.RandomSelect, d, client.DefaultOption)
 	defer xclient.Close()
+	plugins := client.NewPluginContainer()
+	tracer, ctx, err := tracing.InitJaeger("client", "127.0.0.1:6831")
+	if err != nil {
+		panic(fmt.Sprintf("Failed to initialize Jaeger: %v", err))
+	}
+	defer tracer.Shutdown(ctx)
+	ts := otel.Tracer("cccccc")
+	plugins.Add(plugin.NewClientTracingPlugin(ts))
+	xclient.SetPlugins(plugins)
 	args := msgid.GenerateMessageIDArgs{
 		ConversationID:   "123",
 		ConversationType: 3,
 	}
 	reply := &msgid.GenerateMessageIDReply{}
-	if err := xclient.Call(context.Background(), msgid.SERVICE_GENERATE_MESSAGE_ID, args, reply); err != nil {
+	if err := xclient.Call(ctx, msgid.SERVICE_GENERATE_MESSAGE_ID, args, reply); err != nil {
 		t.Error(err)
 	}
 	t.Log(reply.MsgID)

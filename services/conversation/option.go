@@ -20,9 +20,9 @@ func SetOpenTracing(disable bool) Option {
 	}
 }
 
-func SetJeagerServiceName(disable bool) Option {
+func SetJeagerServiceName(serviceName string) Option {
 	return func(rs *rpcxServer) {
-		rs.openTracing = disable
+		rs.serviceName = serviceName
 	}
 }
 
