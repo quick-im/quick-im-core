@@ -5,7 +5,10 @@ import (
 )
 
 func main() {
-	if err := persistence.NewServer("0.0.0.0", 8019).Start(); err != nil {
+	if err := persistence.NewServer(
+		persistence.SetOptIp("0.0.0.0"),
+		persistence.SetOptPort(8015),
+	).Start(); err != nil {
 		panic(err)
 	}
 }

@@ -11,15 +11,16 @@ type rpcxServer struct {
 	port uint16
 }
 
-func NewServer(ip string, port uint16) *rpcxServer {
-	return &rpcxServer{
-		ip:   ip,
-		port: port,
+func NewServer(opts ...Option) *rpcxServer {
+	ser := &rpcxServer{}
+	for i := range opts {
+		opts[i](ser)
 	}
+	return ser
 }
 
 func (s *rpcxServer) Start() error {
 	ser := server.NewServer()
-	ser.RegisterFunctionName(SERVER_NAME, SERVICE_CREATE_CONVERSATION, s.CreateConvercation, "")
+	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_CREATE_CONVERSATION, s.CreateConvercation, "")
 	return ser.Serve("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
 }

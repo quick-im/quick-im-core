@@ -5,7 +5,10 @@ import (
 )
 
 func main() {
-	if err := conversation.NewServer("0.0.0.0", 8019).Start(); err != nil {
+	if err := conversation.NewServer(
+		conversation.SetOptIp("0.0.0.0"),
+		conversation.SetOptPort(8016),
+	).Start(); err != nil {
 		panic(err)
 	}
 }

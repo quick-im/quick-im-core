@@ -5,7 +5,10 @@ import (
 )
 
 func main() {
-	if err := msgbroker.NewServer("0.0.0.0", 8019).Start(); err != nil {
+	if err := msgbroker.NewServer(
+		msgbroker.SetOptIp("0.0.0.0"),
+		msgbroker.SetOptPort(8017),
+	).Start(); err != nil {
 		panic(err)
 	}
 }

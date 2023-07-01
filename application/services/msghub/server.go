@@ -5,7 +5,10 @@ import (
 )
 
 func main() {
-	if err := msghub.NewServer("0.0.0.0", 8019).Start(); err != nil {
+	if err := msghub.NewServer(
+		msghub.SetOptIp("0.0.0.0"),
+		msghub.SetOptPort(8019),
+	).Start(); err != nil {
 		panic(err)
 	}
 }
