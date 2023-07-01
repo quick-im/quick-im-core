@@ -1,9 +1,9 @@
-package mid
+package msgid
 
 import (
 	"context"
 
-	"github.com/quick-im/quick-im-core/services/mid/internal/logic"
+	"github.com/quick-im/quick-im-core/services/msgid/internal/logic"
 )
 
 type GenerateMessageIDArgs struct {

@@ -1,4 +1,4 @@
-package message
+package msgid
 
 import (
 	"fmt"
@@ -20,6 +20,6 @@ func NewServer(ip string, port uint16) *rpcxServer {
 
 func (s *rpcxServer) Start() error {
 	ser := server.NewServer()
-	// ser.RegisterFunctionName(SERVER_NAME, SERVICE_GENERATE_MESSAGE_ID, s.GenerateMessageID, "")
+	ser.RegisterFunctionName(SERVER_NAME, SERVICE_GENERATE_MESSAGE_ID, s.GenerateMessageID, "")
 	return ser.Serve("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
 }
