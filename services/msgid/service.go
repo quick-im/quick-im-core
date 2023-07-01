@@ -7,8 +7,11 @@ import (
 )
 
 type rpcxServer struct {
-	ip   string
-	port uint16
+	ip            string
+	port          uint16
+	openTracing   bool
+	serviceName   string
+	agentHostPort string
 }
 
 func NewServer(opts ...Option) *rpcxServer {

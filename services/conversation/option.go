@@ -13,3 +13,21 @@ func SetOptPort(port uint16) Option {
 		rs.port = port
 	}
 }
+
+func SetOpenTracing(disable bool) Option {
+	return func(rs *rpcxServer) {
+		rs.openTracing = disable
+	}
+}
+
+func SetJeagerServiceName(disable bool) Option {
+	return func(rs *rpcxServer) {
+		rs.openTracing = disable
+	}
+}
+
+func SetJeagerAgentHostPort(agentHostPort string) Option {
+	return func(rs *rpcxServer) {
+		rs.agentHostPort = agentHostPort
+	}
+}
