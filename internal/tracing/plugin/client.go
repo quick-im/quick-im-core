@@ -2,14 +2,27 @@ package plugin
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/quick-im/quick-im-core/internal/tracing"
+	"github.com/smallnest/rpcx/client"
 	"github.com/smallnest/rpcx/share"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
+	tr "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 )
+
+func AddClientTrace(clientName, agentHostPort string, plugins client.PluginContainer) (*tr.TracerProvider, context.Context) {
+	tracer, ctx, err := tracing.InitJaeger(clientName, agentHostPort)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to initialize Jaeger: %v", err))
+	}
+	ts := otel.Tracer(clientName)
+	plugins.Add(NewClientTracingPlugin(ts))
+	return tracer, ctx
+}
 
 type clientTracingPlugin struct {
 	tracer      trace.Tracer
@@ -45,6 +58,8 @@ func (p *clientTracingPlugin) PostCall(ctx context.Context, servicePath, service
 
 	span.AddEvent("PostCall")
 	span.SetAttributes(attribute.String("rpcx.MessageType", "response"))
-	span.SetAttributes(attribute.String("rpcx.Error", err.Error()))
+	if err != nil {
+		span.SetAttributes(attribute.String("rpcx.Error", err.Error()))
+	}
 	return nil
 }
