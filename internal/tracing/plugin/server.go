@@ -56,6 +56,7 @@ func (p *serverTracingPlugin) PreHandleRequest(ctx context.Context, r *protocol.
 func (p *serverTracingPlugin) PostWriteResponse(ctx context.Context, req *protocol.Message, res *protocol.Message, e error) error {
 	span := ctx.Value(tracing.OpenTelemetryKey).(trace.Span)
 	span.AddEvent("PostWriteResponse")
+	span.SetAttributes(attribute.String("rpcx.Error", e.Error()))
 	defer span.End()
 	return nil
 }

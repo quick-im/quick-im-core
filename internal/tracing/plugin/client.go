@@ -45,5 +45,6 @@ func (p *clientTracingPlugin) PostCall(ctx context.Context, servicePath, service
 
 	span.AddEvent("PostCall")
 	span.SetAttributes(attribute.String("rpcx.MessageType", "response"))
+	span.SetAttributes(attribute.String("rpcx.Error", err.Error()))
 	return nil
 }
