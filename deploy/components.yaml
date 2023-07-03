@@ -2,8 +2,6 @@ version: "3"
 services:
   postgres:
     image: postgres:15.3-alpine3.18
-    env_file:
-      .env
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:

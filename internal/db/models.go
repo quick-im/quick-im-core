@@ -9,25 +9,25 @@ import (
 )
 
 type Conversation struct {
-	ConversationID   pgtype.UUID
+	ConversationID   string
 	LastMsgID        pgtype.Text
-	LastSendTime     string
+	LastSendTime     pgtype.Timestamp
 	IsDelete         bool
 	ConversationType int32
-	LastSendSession  string
+	LastSendSession  pgtype.Text
 }
 
 type ConversationSessionID struct {
 	ID             int32
-	SessionID      int32
+	SessionID      string
 	LastRecvMsgID  pgtype.Text
 	IsKickOut      bool
-	ConvercationID pgtype.UUID
+	ConvercationID string
 }
 
 type Message struct {
 	MsgID          string
-	ConvercationID pgtype.UUID
+	ConvercationID string
 	FromSession    int32
 	SendTime       pgtype.Timestamp
 	Status         int32

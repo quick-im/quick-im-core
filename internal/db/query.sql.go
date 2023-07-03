@@ -7,18 +7,32 @@ package db
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const getConvercationSessionCountByConvercationPkId = `-- name: GetConvercationSessionCountByConvercationPkId :one
-SELECT count(id) FROM conversation_session_id
-WHERE convercation_id = $1::uuid
+const createConvercation = `-- name: CreateConvercation :exec
+INSERT INTO public.conversations
+(conversation_id, last_msg_id, last_send_time, is_delete, conversation_type, last_send_session)
+VALUES($1::varchar, NULL, NULL, false, 0, NULL)
 `
 
-func (q *Queries) GetConvercationSessionCountByConvercationPkId(ctx context.Context, convercationID pgtype.UUID) (int64, error) {
+func (q *Queries) CreateConvercation(ctx context.Context, convercationID string) error {
+	_, err := q.db.Exec(ctx, createConvercation, convercationID)
+	return err
+}
+
+const getConvercationSessionCountByConvercationPkId = `-- name: GetConvercationSessionCountByConvercationPkId :one
+SELECT count(id) FROM public.conversation_session_id
+WHERE convercation_id = $1::varchar
+`
+
+func (q *Queries) GetConvercationSessionCountByConvercationPkId(ctx context.Context, convercationID string) (int64, error) {
 	row := q.db.QueryRow(ctx, getConvercationSessionCountByConvercationPkId, convercationID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+type SessionJoinsConvercationUseCopyFromParams struct {
+	SessionID      string
+	ConvercationID string
 }
