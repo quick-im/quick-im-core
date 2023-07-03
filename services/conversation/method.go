@@ -40,17 +40,41 @@ func (s *rpcxServer) CreateConvercation(ctx context.Context) createConvercationF
 		if err := dbObj.CreateConvercation(ctx, reply.ConversationID); err != nil {
 			return err
 		}
-		if len(args.SessionList) > 0 {
-			sessions := make([]db.SessionJoinsConvercationUseCopyFromParams, len(args.SessionList))
-			for i := range args.SessionList {
-				sessions[i] = db.SessionJoinsConvercationUseCopyFromParams{
-					SessionID:      args.SessionList[i],
-					ConvercationID: reply.ConversationID,
-				}
+		sessions := make([]db.SessionJoinsConvercationUseCopyFromParams, len(args.SessionList))
+		for i := range args.SessionList {
+			sessions[i] = db.SessionJoinsConvercationUseCopyFromParams{
+				SessionID:      args.SessionList[i],
+				ConvercationID: reply.ConversationID,
 			}
-			if _, err := dbObj.SessionJoinsConvercationUseCopyFrom(ctx, sessions); err != nil {
-				return err
+		}
+		if _, err := dbObj.SessionJoinsConvercationUseCopyFrom(ctx, sessions); err != nil {
+			return err
+		}
+		return nil
+	}
+}
+
+// 加入会话
+type JoinConvercationArgs = CreateConvercationArgs
+type JoinConvercationReply = CreateConvercationReply
+type JoinConvercationFn = createConvercationFn
+
+func (s *rpcxServer) JoinConvercation(ctx context.Context) JoinConvercationFn {
+	ctxDb := ctx.Value(contant.CTX_POSTGRES_KEY).(contant.PgCtxType)
+	dbObj := db.New(ctxDb)
+	return func(ctx context.Context, args JoinConvercationArgs, reply *JoinConvercationReply) error {
+		if len(args.SessionList) < 1 {
+			return errors.ErrConversationNumberRange
+		}
+		sessions := make([]db.SessionJoinsConvercationUseCopyFromParams, len(args.SessionList))
+		for i := range args.SessionList {
+			sessions[i] = db.SessionJoinsConvercationUseCopyFromParams{
+				SessionID:      args.SessionList[i],
+				ConvercationID: reply.ConversationID,
 			}
+		}
+		if _, err := dbObj.SessionJoinsConvercationUseCopyFrom(ctx, sessions); err != nil {
+			return err
 		}
 		return nil
 	}

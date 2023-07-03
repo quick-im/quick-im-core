@@ -1,8 +1,11 @@
 package conversation
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/quick-im/quick-im-core/internal/contant"
+	"github.com/quick-im/quick-im-core/internal/db"
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
 	"github.com/smallnest/rpcx/server"
 )
@@ -31,6 +34,9 @@ func (s *rpcxServer) Start() error {
 		defer tracer.Shutdown(ctx)
 	}
 	// ser.Plugins.Add(opentracingrpc.ServerPlugin(tracer))
-	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_CREATE_CONVERSATION, s.CreateConvercation, "")
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, contant.CTX_POSTGRES_KEY, db.GetDb())
+	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_CREATE_CONVERSATION, s.CreateConvercation(ctx), "")
+	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_JOIN_CONVERSATION, s.JoinConvercation(ctx), "")
 	return ser.Serve("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
 }
