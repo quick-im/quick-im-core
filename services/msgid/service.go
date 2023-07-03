@@ -1,6 +1,7 @@
 package msgid
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
@@ -29,6 +30,7 @@ func (s *rpcxServer) Start() error {
 		tracer, ctx := plugin.AddServerTrace(ser, s.serviceName, s.agentHostPort)
 		defer tracer.Shutdown(ctx)
 	}
-	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_GENERATE_MESSAGE_ID, s.GenerateMessageID, "")
+	ctx := context.Background()
+	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_GENERATE_MESSAGE_ID, s.GenerateMessageID(ctx), "")
 	return ser.Serve("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
 }

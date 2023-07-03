@@ -1,0 +1,60 @@
+version: "3"
+services:
+  postgres:
+    image: postgres:15.3-alpine3.18
+    env_file:
+      .env
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./data/postgres:/var/lib/postgresql/data
+    networks: ["quick-im-network"]
+    restart: always
+  redis:
+    image: redis:7.0.11-alpine3.18
+    volumes:
+      - ./data/redis:/data
+    networks: ["quick-im-network"]
+    restart: always
+  consul-server-1:
+    image: consul:1.15
+    container_name: consul-server-1
+    ports:
+      - "8500:8500"
+    command: consul agent -server -bootstrap-expect=1 -ui -client=0.0.0.0 -data-dir=/consul/data
+    # command: consul agent -server -bootstrap-expect=3 -bind=0.0.0.0 -client=0.0.0.0 -retry-join=consul-server-1 -retry-join=consul-server-2 -retry-join=consul-server-3 -encrypt=YOUR_ENCRYPTION_KEY
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./data/consul:/consul/data
+    networks: ["quick-im-network"]
+    restart: always
+  nats:
+    image: nats
+    ports:
+      - "8222:8222"
+    command: "--cluster_name NATS --cluster nats://0.0.0.0:6222 --http_port 8222 "
+    volumes:
+        - /etc/localtime:/etc/localtime:ro
+    networks: ["quick-im-network"]
+    restart: always
+  nats-1:
+    image: nats
+    command: "--cluster_name NATS --cluster nats://0.0.0.0:6222 --routes=nats://ruser:T0pS3cr3t@nats:6222"
+    volumes:
+        - /etc/localtime:/etc/localtime:ro
+    networks: ["quick-im-network"]
+    restart: always
+    depends_on: ["nats"]
+  nats-2:
+    image: nats
+    command: "--cluster_name NATS --cluster nats://0.0.0.0:6222 --routes=nats://ruser:T0pS3cr3t@nats:6222"
+    volumes:
+        - /etc/localtime:/etc/localtime:ro
+    networks: ["quick-im-network"]
+    restart: always
+    depends_on: ["nats"]
+
+networks:
+  quick-im-network:
+    name: quick-im-network

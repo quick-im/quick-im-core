@@ -20,13 +20,17 @@ type CreateConvercationReply struct {
 	ConversationID string
 }
 
-func (s *rpcxServer) CreateConvercation(ctx context.Context, args CreateConvercationArgs, reply *CreateConvercationReply) error {
-	if args.ConversationType > conversationTypeMax {
-		return errors.ErrConversationTypeRange
+type createConvercationFn func(ctx context.Context, args CreateConvercationArgs, reply *CreateConvercationReply) error
+
+func (s *rpcxServer) CreateConvercation(ctx context.Context) createConvercationFn {
+	return func(ctx context.Context, args CreateConvercationArgs, reply *CreateConvercationReply) error {
+		if args.ConversationType > conversationTypeMax {
+			return errors.ErrConversationTypeRange
+		}
+		if len(args.SessionList) < 1 {
+			return errors.ErrConversationNumberRange
+		}
+		reply.ConversationID = uuid.New().String()
+		return nil
 	}
-	if len(args.SessionList) < 1 {
-		return errors.ErrConversationNumberRange
-	}
-	reply.ConversationID = uuid.New().String()
-	return nil
 }

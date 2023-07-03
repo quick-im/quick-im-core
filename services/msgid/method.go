@@ -15,7 +15,11 @@ type GenerateMessageIDReply struct {
 	MsgID string
 }
 
-func (s *rpcxServer) GenerateMessageID(ctx context.Context, args GenerateMessageIDArgs, reply *GenerateMessageIDReply) error {
-	reply.MsgID = logic.GenerateRongCloudMessageID(args.ConversationType, args.ConversationID)
-	return nil
+type generateMessageIdFn func(ctx context.Context, args GenerateMessageIDArgs, reply *GenerateMessageIDReply) error
+
+func (s *rpcxServer) GenerateMessageID(ctx context.Context) generateMessageIdFn {
+	return func(ctx context.Context, args GenerateMessageIDArgs, reply *GenerateMessageIDReply) error {
+		reply.MsgID = logic.GenerateRongCloudMessageID(args.ConversationType, args.ConversationID)
+		return nil
+	}
 }
