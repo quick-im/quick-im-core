@@ -2,9 +2,10 @@ package rpcx
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/quick-im/quick-im-core/internal/errors"
+	"github.com/quick-im/quick-im-core/internal/quickim_errors"
 	"github.com/quick-im/quick-im-core/internal/tracing"
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
 	"github.com/smallnest/rpcx/client"
@@ -21,7 +22,10 @@ type rpcxClientOpt struct {
 	trackJaegeragentHostPort string
 	tracePtr                 *trace.TracerProvider
 	xclient                  client.XClient
+	ctx                      context.Context
 }
+
+type ctxInitInner string
 
 type rpcxOption func(*rpcxClientOpt)
 
@@ -31,7 +35,7 @@ func WithOpenTracing(disable bool) rpcxOption {
 	}
 }
 
-func WithJeagerServiceName(serviceName string) rpcxOption {
+func WithServiceName(serviceName string) rpcxOption {
 	return func(rs *rpcxClientOpt) {
 		rs.serviceName = serviceName
 	}
@@ -82,7 +86,7 @@ func NewClient(opts ...rpcxOption) (*rpcxClientOpt, error) {
 	if c.openTracing {
 		tracer, ctx := c.addTrace(xclient)
 		c.tracePtr = tracer
-		_ = ctx
+		c.ctx = ctx
 	}
 	c.xclient = xclient
 	return c, nil
@@ -94,24 +98,39 @@ func (s *rpcxClientOpt) Close() error {
 
 func (s *rpcxClientOpt) ShutdownTrace() error {
 	if s.tracePtr == nil {
-		return errors.ErrTraceClosed
+		return quickim_errors.ErrTraceClosed
 	}
-	return s.tracePtr.Shutdown(context.Background())
+	return s.tracePtr.Shutdown(s.ctx)
 }
 
-func (s *rpcxClientOpt) Call() error {
-	return nil
+func (s *rpcxClientOpt) CloseAndShutdownTrace() error {
+	var err error
+	err1 := s.xclient.Close()
+	if err1 != nil {
+		err = err1
+	}
+	if s.tracePtr != nil {
+		err2 := s.tracePtr.Shutdown(s.ctx)
+		if err2 != nil {
+			err = errors.Join(err, err2)
+		}
+	}
+	return err
+}
+
+func (s *rpcxClientOpt) Call(ctx context.Context, serviceMethod string, arg interface{}, replay interface{}) error {
+	ctxInner := context.WithValue(s.ctx, ctxInitInner("initCtx"), nil)
+	return s.xclient.Call(ctxInner, serviceMethod, arg, replay)
 }
 
 func (s *rpcxClientOpt) addTrace(xclient client.XClient) (*trace.TracerProvider, context.Context) {
 	// 添加 Jaeger 拦截器
 	plugins := client.NewPluginContainer()
-	tracer, ctx, err := tracing.InitJaeger("client", "127.0.0.1:6831")
+	tracer, ctx, err := tracing.InitJaeger("client", s.trackJaegeragentHostPort)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to initialize Jaeger: %v", err))
 	}
-	defer tracer.Shutdown(ctx)
-	ts := otel.Tracer("cccccc")
+	ts := otel.Tracer("client")
 	plugins.Add(plugin.NewClientTracingPlugin(ts))
 	xclient.SetPlugins(plugins)
 	return tracer, ctx

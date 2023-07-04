@@ -7,7 +7,7 @@ import (
 
 	"github.com/quick-im/quick-im-core/internal/contant"
 	"github.com/quick-im/quick-im-core/internal/db"
-	"github.com/quick-im/quick-im-core/internal/errors"
+	"github.com/quick-im/quick-im-core/internal/quickim_errors"
 )
 
 // 创建会话
@@ -31,10 +31,10 @@ func (s *rpcxServer) CreateConvercation(ctx context.Context) createConvercationF
 	dbObj := db.New(ctxDb)
 	return func(ctx context.Context, args CreateConvercationArgs, reply *CreateConvercationReply) error {
 		if args.ConversationType > conversationTypeMax {
-			return errors.ErrConversationTypeRange
+			return quickim_errors.ErrConversationTypeRange
 		}
 		if len(args.SessionList) < 1 {
-			return errors.ErrConversationNumberRange
+			return quickim_errors.ErrConversationNumberRange
 		}
 		reply.ConversationID = uuid.New().String()
 		if err := dbObj.CreateConvercation(ctx, reply.ConversationID); err != nil {
@@ -64,7 +64,7 @@ func (s *rpcxServer) JoinConvercation(ctx context.Context) JoinConvercationFn {
 	dbObj := db.New(ctxDb)
 	return func(ctx context.Context, args JoinConvercationArgs, reply *JoinConvercationReply) error {
 		if len(args.SessionList) < 1 {
-			return errors.ErrConversationNumberRange
+			return quickim_errors.ErrConversationNumberRange
 		}
 		sessions := make([]db.SessionJoinsConvercationUseCopyFromParams, len(args.SessionList))
 		for i := range args.SessionList {

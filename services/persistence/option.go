@@ -31,3 +31,21 @@ func WithJeagerAgentHostPort(trackAgentHostPort string) Option {
 		rs.trackAgentHostPort = trackAgentHostPort
 	}
 }
+
+func WithUseConsulRegistry(useConsulRegistry bool) Option {
+	return func(rs *rpcxServer) {
+		rs.useConsulRegistry = useConsulRegistry
+	}
+}
+
+func WithConsulServer(consulServer string) Option {
+	return func(rs *rpcxServer) {
+		rs.consulServers = append(rs.consulServers, consulServer)
+	}
+}
+
+func WithConsulServers(consulServers ...string) Option {
+	return func(rs *rpcxServer) {
+		rs.consulServers = consulServers
+	}
+}

@@ -1,4 +1,4 @@
-package errors
+package quickim_errors
 
 import "errors"
 

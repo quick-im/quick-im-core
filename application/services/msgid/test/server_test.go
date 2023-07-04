@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/quick-im/quick-im-core/internal/rpcx"
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
 	"github.com/quick-im/quick-im-core/services/msgid"
 	cclient "github.com/rpcxio/rpcx-consul/client"
@@ -46,6 +47,28 @@ func TestConsul(t *testing.T) {
 	}
 	reply := &msgid.GenerateMessageIDReply{}
 	if err := xclient.Call(ctx, msgid.SERVICE_GENERATE_MESSAGE_ID, args, reply); err != nil {
+		t.Error(err)
+	}
+	t.Log(reply.MsgID)
+}
+
+func TestOptClient(t *testing.T) {
+	c, err := rpcx.NewClient(
+		rpcx.WithServerAddress("127.0.0.1:8018"),
+		rpcx.WithServiceName(msgid.SERVER_NAME),
+		rpcx.WithOpenTracing(true),
+		rpcx.WithJeagerAgentHostPort("127.0.0.1:6831"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.CloseAndShutdownTrace()
+	args := msgid.GenerateMessageIDArgs{
+		ConversationID:   "123",
+		ConversationType: 3,
+	}
+	reply := &msgid.GenerateMessageIDReply{}
+	if err := c.Call(context.Background(), msgid.SERVICE_GENERATE_MESSAGE_ID, args, reply); err != nil {
 		t.Error(err)
 	}
 	t.Log(reply.MsgID)

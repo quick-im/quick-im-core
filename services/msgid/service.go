@@ -17,10 +17,14 @@ type rpcxServer struct {
 	openTracing        bool
 	serviceName        string
 	trackAgentHostPort string
+	useConsulRegistry  bool
+	consulServers      []string
 }
 
 func NewServer(opts ...Option) *rpcxServer {
-	ser := &rpcxServer{}
+	ser := &rpcxServer{
+		consulServers: make([]string, 0),
+	}
 	for i := range opts {
 		opts[i](ser)
 	}
@@ -33,17 +37,19 @@ func (s *rpcxServer) Start() error {
 		tracer, ctx := plugin.AddServerTrace(ser, s.serviceName, s.trackAgentHostPort)
 		defer tracer.Shutdown(ctx)
 	}
-	addRegistryPlugin(ser)
+	s.addRegistryPlugin(ser)
 	ctx := context.Background()
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_GENERATE_MESSAGE_ID, s.GenerateMessageID(ctx), "")
 	return ser.Serve("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
 }
 
-func addRegistryPlugin(s *server.Server) {
-
+func (s *rpcxServer) addRegistryPlugin(ser *server.Server) {
+	if !s.useConsulRegistry {
+		return
+	}
 	r := &cserver.ConsulRegisterPlugin{
-		ServiceAddress: "tcp@" + "127.0.0.1:8018",
-		ConsulServers:  []string{"127.0.0.1:8500"},
+		ServiceAddress: "tcp@" + fmt.Sprintf("%s:%d", s.ip, s.port),
+		ConsulServers:  s.consulServers,
 		BasePath:       SERVER_NAME,
 		UpdateInterval: time.Minute,
 	}
@@ -51,5 +57,5 @@ func addRegistryPlugin(s *server.Server) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	s.Plugins.Add(r)
+	ser.Plugins.Add(r)
 }
