@@ -12,11 +12,11 @@ import (
 )
 
 type rpcxServer struct {
-	ip            string
-	port          uint16
-	openTracing   bool
-	serviceName   string
-	agentHostPort string
+	ip                 string
+	port               uint16
+	openTracing        bool
+	serviceName        string
+	trackAgentHostPort string
 }
 
 func NewServer(opts ...Option) *rpcxServer {
@@ -30,7 +30,7 @@ func NewServer(opts ...Option) *rpcxServer {
 func (s *rpcxServer) Start() error {
 	ser := server.NewServer()
 	if s.openTracing {
-		tracer, ctx := plugin.AddServerTrace(ser, s.serviceName, s.agentHostPort)
+		tracer, ctx := plugin.AddServerTrace(ser, s.serviceName, s.trackAgentHostPort)
 		defer tracer.Shutdown(ctx)
 	}
 	addRegistryPlugin(ser)

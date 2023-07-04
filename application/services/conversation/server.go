@@ -6,8 +6,8 @@ import (
 
 func main() {
 	if err := conversation.NewServer(
-		conversation.SetOptIp("0.0.0.0"),
-		conversation.SetOptPort(8016),
+		conversation.WithIp("0.0.0.0"),
+		conversation.WithPort(8016),
 	).Start(); err != nil {
 		panic(err)
 	}

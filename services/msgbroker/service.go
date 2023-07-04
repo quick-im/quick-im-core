@@ -8,11 +8,11 @@ import (
 )
 
 type rpcxServer struct {
-	ip            string
-	port          uint16
-	openTracing   bool
-	serviceName   string
-	agentHostPort string
+	ip                 string
+	port               uint16
+	openTracing        bool
+	serviceName        string
+	trackAgentHostPort string
 }
 
 func NewServer(opts ...Option) *rpcxServer {
@@ -27,7 +27,7 @@ func (s *rpcxServer) Start() error {
 	ser := server.NewServer()
 	// 在服务端添加 Jaeger 拦截器
 	if s.openTracing {
-		tracer, ctx := plugin.AddServerTrace(ser, s.serviceName, s.agentHostPort)
+		tracer, ctx := plugin.AddServerTrace(ser, s.serviceName, s.trackAgentHostPort)
 		defer tracer.Shutdown(ctx)
 	}
 	// _ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_GENERATE_MESSAGE_ID, s.GenerateMessageID, "")

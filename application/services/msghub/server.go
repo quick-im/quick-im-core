@@ -6,8 +6,8 @@ import (
 
 func main() {
 	if err := msghub.NewServer(
-		msghub.SetOptIp("0.0.0.0"),
-		msghub.SetOptPort(8019),
+		msghub.WithIp("0.0.0.0"),
+		msghub.WithPort(8019),
 	).Start(); err != nil {
 		panic(err)
 	}

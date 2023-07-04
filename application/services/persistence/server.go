@@ -6,8 +6,8 @@ import (
 
 func main() {
 	if err := persistence.NewServer(
-		persistence.SetOptIp("0.0.0.0"),
-		persistence.SetOptPort(8015),
+		persistence.WithIp("0.0.0.0"),
+		persistence.WithPort(8015),
 	).Start(); err != nil {
 		panic(err)
 	}

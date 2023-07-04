@@ -6,8 +6,8 @@ import (
 
 func main() {
 	if err := msgbroker.NewServer(
-		msgbroker.SetOptIp("0.0.0.0"),
-		msgbroker.SetOptPort(8017),
+		msgbroker.WithIp("0.0.0.0"),
+		msgbroker.WithPort(8017),
 	).Start(); err != nil {
 		panic(err)
 	}
