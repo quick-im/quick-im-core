@@ -50,6 +50,13 @@ func (s *rpcxServer) Start() error {
 	ctx = context.WithValue(ctx, contant.CTX_POSTGRES_KEY, dbOpt.GetDb())
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_CREATE_CONVERSATION, s.CreateConvercation(ctx), "")
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_JOIN_CONVERSATION, s.JoinConvercation(ctx), "")
+	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_ARCHIVE_CONVERCATIONS, s.SetArchiveConversations(ctx), "")
+	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_DELETE_CONVERCATIONS, s.SetDeleteConversation(ctx), "")
+	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_CHECK_JOINED_CONVERCATION, s.CheckJoinedConversation(ctx), "")
+	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_GET_CONVERCATION_INFO, s.GetConversationInfo(ctx), "")
+	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_GET_JOINED_CONVERCATIONS, s.GetJoinedConversations(ctx), "")
+	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_KICKOUT_FOR_CONVERCATION, s.KickoutForConversation(ctx), "")
+	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_UPDATE_CONVERCATIONS_LASTMSG, s.UpdateConversationLastMsg(ctx), "")
 	return ser.Serve("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
 }
 

@@ -2,8 +2,10 @@ package conversation
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/quick-im/quick-im-core/internal/contant"
 	"github.com/quick-im/quick-im-core/internal/db"
@@ -94,8 +96,15 @@ type getJoinedConversationsFn func(ctx context.Context, args GetJoinedConversati
 func (r *rpcxServer) GetJoinedConversations(ctx context.Context) getJoinedConversationsFn {
 	ctxDb := ctx.Value(contant.CTX_POSTGRES_KEY).(contant.PgCtxType)
 	dbObj := db.New(ctxDb)
-	_ = dbObj
 	return func(ctx context.Context, args GetJoinedConversationsArgs, reply *GetJoinedConversationsReply) error {
+		list, err := dbObj.GetJoinedConversations(ctx, args.SessionId)
+		if err != nil {
+			return err
+		}
+		reply.Conversations = make([]string, len(list))
+		for i := range list {
+			reply.Conversations[i] = list[i].ConvercationID
+		}
 		return nil
 	}
 }
@@ -110,13 +119,23 @@ type CheckJoinedConversationReply struct {
 	Joined bool
 }
 
-type checkJoinedConversationsFn func(ctx context.Context, args CheckJoinedConversationArgs, reply *CheckJoinedConversationReply) error
+type checkJoinedConversationFn func(ctx context.Context, args CheckJoinedConversationArgs, reply *CheckJoinedConversationReply) error
 
-func (r *rpcxServer) CheckJoinedConversations(ctx context.Context) checkJoinedConversationsFn {
+func (r *rpcxServer) CheckJoinedConversation(ctx context.Context) checkJoinedConversationFn {
 	ctxDb := ctx.Value(contant.CTX_POSTGRES_KEY).(contant.PgCtxType)
 	dbObj := db.New(ctxDb)
-	_ = dbObj
 	return func(ctx context.Context, args CheckJoinedConversationArgs, reply *CheckJoinedConversationReply) error {
+		reply.Joined = false
+		n, err := dbObj.CheckJoinedonversation(ctx, db.CheckJoinedonversationParams{
+			SessionID:      args.SessionId,
+			ConvercationID: args.ConversationId,
+		})
+		if err != nil {
+			return err
+		}
+		if n > 0 {
+			reply.Joined = true
+		}
 		return nil
 	}
 }
@@ -131,13 +150,22 @@ type KickoutForConversationReply struct {
 	Kickouted bool
 }
 
-type kickoutJoinedConversationsFn func(ctx context.Context, args KickoutForConversationArgs, reply *KickoutForConversationReply) error
+type kickoutJoinedConversationFn func(ctx context.Context, args KickoutForConversationArgs, reply *KickoutForConversationReply) error
 
-func (r *rpcxServer) KickoutForConversations(ctx context.Context) kickoutJoinedConversationsFn {
+func (r *rpcxServer) KickoutForConversation(ctx context.Context) kickoutJoinedConversationFn {
 	ctxDb := ctx.Value(contant.CTX_POSTGRES_KEY).(contant.PgCtxType)
 	dbObj := db.New(ctxDb)
-	_ = dbObj
 	return func(ctx context.Context, args KickoutForConversationArgs, reply *KickoutForConversationReply) error {
+		params := make([]db.KickoutForConversationParams, len(args.SessionId))
+		for i := range args.SessionId {
+			params[i].SessionID = args.SessionId[i]
+			params[i].ConvercationID = args.ConversationId
+		}
+		dbObj.KickoutForConversation(ctx, params).Exec(func(i int, err error) {
+			if err != nil {
+				//TODO: 某一行出错则打印日志
+			}
+		})
 		return nil
 	}
 }
@@ -149,18 +177,116 @@ type GetConversationInfoArgs struct {
 
 type GetConversationInfoReply struct {
 	LasMsgId         string
+	LastSendTime     time.Time
+	LastSendSession  string
 	ConversationType int32
 	IsDelete         bool
 	IsArchive        bool
 }
 
-type GetConversationInfoFn func(ctx context.Context, args KickoutForConversationArgs, reply *KickoutForConversationReply) error
+type GetConversationInfoFn func(ctx context.Context, args GetConversationInfoArgs, reply *GetConversationInfoReply) error
 
 func (r *rpcxServer) GetConversationInfo(ctx context.Context) GetConversationInfoFn {
 	ctxDb := ctx.Value(contant.CTX_POSTGRES_KEY).(contant.PgCtxType)
 	dbObj := db.New(ctxDb)
-	_ = dbObj
-	return func(ctx context.Context, args KickoutForConversationArgs, reply *KickoutForConversationReply) error {
+	return func(ctx context.Context, args GetConversationInfoArgs, reply *GetConversationInfoReply) error {
+		info, err := dbObj.GetConversationInfo(ctx, args.ConversationId)
+		if err != nil {
+			return err
+		}
+		reply.ConversationType = info.ConversationType
+		reply.IsArchive = info.IsArchive
+		reply.IsDelete = info.IsDelete
+		reply.LasMsgId = info.LastMsgID.String
+		reply.LastSendSession = info.LastSendSession.String
+		reply.LastSendTime = info.LastSendTime.Time
 		return nil
+	}
+}
+
+// 删除会话
+type SetDeleteConversationArgs struct {
+	ConversationId []string
+}
+
+type SetDeleteConversationReply struct {
+}
+
+type SetDeleteConversationFn func(ctx context.Context, args SetDeleteConversationArgs, reply *SetDeleteConversationReply) error
+
+func (r *rpcxServer) SetDeleteConversation(ctx context.Context) SetDeleteConversationFn {
+	ctxDb := ctx.Value(contant.CTX_POSTGRES_KEY).(contant.PgCtxType)
+	dbObj := db.New(ctxDb)
+	return func(ctx context.Context, args SetDeleteConversationArgs, reply *SetDeleteConversationReply) error {
+		dbObj.DeleteConversations(ctx, args.ConversationId).Exec(func(i int, err error) {
+			if err != nil {
+				//TODO: 某条记录出错的时候打印日志
+			}
+		})
+		return nil
+	}
+}
+
+// 设置归档会话
+type SetArchiveConversationsArgs struct {
+	ConversationId []string
+	IsArchive      bool
+}
+
+type SetArchiveConversationsReply struct {
+}
+
+type SetArchiveConversationsFn func(ctx context.Context, args SetArchiveConversationsArgs, reply *SetArchiveConversationsReply) error
+
+func (r *rpcxServer) SetArchiveConversations(ctx context.Context) SetArchiveConversationsFn {
+	ctxDb := ctx.Value(contant.CTX_POSTGRES_KEY).(contant.PgCtxType)
+	dbObj := db.New(ctxDb)
+	return func(ctx context.Context, args SetArchiveConversationsArgs, reply *SetArchiveConversationsReply) error {
+		if args.IsArchive {
+			dbObj.ArchiveConversations(ctx, args.ConversationId).Exec(func(i int, err error) {
+				if err != nil {
+					//TODO: 某条记录出错的时候打印日志
+				}
+			})
+		} else {
+			dbObj.UnArchiveConversations(ctx, args.ConversationId).Exec(func(i int, err error) {
+				if err != nil {
+					//TODO: 某条记录出错的时候打印日志
+				}
+			})
+		}
+		return nil
+	}
+}
+
+// 更新会话LastMsg
+type UpdateConversationLastMsgArgs struct {
+	ConversationId  string
+	MsgId           string
+	LastTime        time.Time
+	LastSendSession string
+}
+
+type UpdateConversationLastMsgReply struct {
+}
+
+type UpdateConversationLastMsgFn func(ctx context.Context, args UpdateConversationLastMsgArgs, reply *UpdateConversationLastMsgReply) error
+
+func (r *rpcxServer) UpdateConversationLastMsg(ctx context.Context) UpdateConversationLastMsgFn {
+	ctxDb := ctx.Value(contant.CTX_POSTGRES_KEY).(contant.PgCtxType)
+	dbObj := db.New(ctxDb)
+	return func(ctx context.Context, args UpdateConversationLastMsgArgs, reply *UpdateConversationLastMsgReply) error {
+		err := dbObj.UpdateConversationLastMsg(ctx, db.UpdateConversationLastMsgParams{
+			LastSendTime: pgtype.Timestamp{
+				Time: args.LastTime,
+			},
+			LastMsgID:       args.MsgId,
+			LastSendSession: args.LastSendSession,
+			ConversationID:  args.ConversationId,
+		})
+		if err != nil {
+			// 记录日志
+		}
+		return err
 	}
 }

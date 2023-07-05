@@ -7,7 +7,26 @@ package db
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const checkJoinedonversation = `-- name: CheckJoinedonversation :one
+SELECT count(id)
+FROM public.conversation_session_id WHERE session_id = $1::varchar AND convercation_id= $2::varchar AND is_kick_out = false
+`
+
+type CheckJoinedonversationParams struct {
+	SessionID      string
+	ConvercationID string
+}
+
+func (q *Queries) CheckJoinedonversation(ctx context.Context, arg CheckJoinedonversationParams) (int64, error) {
+	row := q.db.QueryRow(ctx, checkJoinedonversation, arg.SessionID, arg.ConvercationID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
 
 const createConvercation = `-- name: CreateConvercation :exec
 INSERT INTO public.conversations
@@ -32,7 +51,81 @@ func (q *Queries) GetConvercationSessionCountByConvercationPkId(ctx context.Cont
 	return count, err
 }
 
+const getConversationInfo = `-- name: GetConversationInfo :one
+SELECT conversation_id, last_msg_id, last_send_time, is_delete, conversation_type, last_send_session, is_archive
+FROM public.conversations WHERE conversation_id = $1::varchar
+`
+
+func (q *Queries) GetConversationInfo(ctx context.Context, conversationID string) (Conversation, error) {
+	row := q.db.QueryRow(ctx, getConversationInfo, conversationID)
+	var i Conversation
+	err := row.Scan(
+		&i.ConversationID,
+		&i.LastMsgID,
+		&i.LastSendTime,
+		&i.IsDelete,
+		&i.ConversationType,
+		&i.LastSendSession,
+		&i.IsArchive,
+	)
+	return i, err
+}
+
+const getJoinedConversations = `-- name: GetJoinedConversations :many
+SELECT id, session_id, last_recv_msg_id, is_kick_out, convercation_id
+FROM public.conversation_session_id WHERE session_id = $1::varchar AND is_kick_out = false
+`
+
+func (q *Queries) GetJoinedConversations(ctx context.Context, sessionID string) ([]ConversationSessionID, error) {
+	rows, err := q.db.Query(ctx, getJoinedConversations, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ConversationSessionID
+	for rows.Next() {
+		var i ConversationSessionID
+		if err := rows.Scan(
+			&i.ID,
+			&i.SessionID,
+			&i.LastRecvMsgID,
+			&i.IsKickOut,
+			&i.ConvercationID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 type SessionJoinsConvercationUseCopyFromParams struct {
 	SessionID      string
 	ConvercationID string
+}
+
+const updateConversationLastMsg = `-- name: UpdateConversationLastMsg :exec
+UPDATE public.conversations
+SET last_msg_id= $2::varchar, last_send_time=$1, last_send_session= $3::varchar
+WHERE conversation_id= $4::varchar
+`
+
+type UpdateConversationLastMsgParams struct {
+	LastSendTime    pgtype.Timestamp
+	LastMsgID       string
+	LastSendSession string
+	ConversationID  string
+}
+
+func (q *Queries) UpdateConversationLastMsg(ctx context.Context, arg UpdateConversationLastMsgParams) error {
+	_, err := q.db.Exec(ctx, updateConversationLastMsg,
+		arg.LastSendTime,
+		arg.LastMsgID,
+		arg.LastSendSession,
+		arg.ConversationID,
+	)
+	return err
 }

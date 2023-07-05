@@ -14,7 +14,7 @@ import (
 const logFileNameFormat = "2006-01-02.log"
 
 // 按日期记录日志的Hook
-type DateHook struct {
+type dateHook struct {
 	lock        sync.Mutex
 	file        *os.File
 	day         int
@@ -23,7 +23,7 @@ type DateHook struct {
 }
 
 // 实现WriteSyncer接口
-func (h *DateHook) Write(p []byte) (n int, err error) {
+func (h *dateHook) Write(p []byte) (n int, err error) {
 	// 获取当前日期
 	today := time.Now().Day()
 
@@ -60,11 +60,51 @@ func (h *DateHook) Write(p []byte) (n int, err error) {
 	return h.file.Write(p)
 }
 
-func NewLogger(logPath, serviceName string, logLevel zapcore.Level) (*zap.Logger, error) {
+type logger = *zap.Logger
+
+type loggerOpt struct {
+	logPath     string
+	serviceName string
+	logLevel    zapcore.Level
+}
+
+type logOpt func(*loggerOpt)
+
+func NewLoggerWithOpt(opts ...logOpt) *loggerOpt {
+	l := &loggerOpt{
+		logPath:     "logs",
+		serviceName: "all",
+		logLevel:    zap.DebugLevel,
+	}
+	for i := range opts {
+		opts[i](l)
+	}
+	return l
+}
+
+func WithLogPath(path string) logOpt {
+	return func(lo *loggerOpt) {
+		lo.logPath = path
+	}
+}
+
+func WithServiceName(serviceName string) logOpt {
+	return func(lo *loggerOpt) {
+		lo.serviceName = serviceName
+	}
+}
+
+func WithLogLevel(level zapcore.Level) logOpt {
+	return func(lo *loggerOpt) {
+		lo.logLevel = level
+	}
+}
+
+func (l *loggerOpt) NewLogger() (logger, error) {
 	// 创建日志文件的Hook
-	hook := &DateHook{
-		logPath:     logPath,
-		serviceName: serviceName,
+	hook := &dateHook{
+		logPath:     l.logPath,
+		serviceName: l.serviceName,
 	}
 
 	// 设置日志输出格式
@@ -77,7 +117,7 @@ func NewLogger(logPath, serviceName string, logLevel zapcore.Level) (*zap.Logger
 	core := zapcore.NewCore(
 		zapcore.NewJSONEncoder(encoderConfig),
 		zapcore.AddSync(hook),
-		logLevel,
+		l.logLevel,
 	)
 
 	// 创建Logger对象
