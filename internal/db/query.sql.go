@@ -11,8 +11,8 @@ import (
 
 const createConvercation = `-- name: CreateConvercation :exec
 INSERT INTO public.conversations
-(conversation_id, last_msg_id, last_send_time, is_delete, conversation_type, last_send_session)
-VALUES($1::varchar, NULL, NULL, false, 0, NULL)
+(conversation_id, last_msg_id, last_send_time, is_delete, is_archive, conversation_type, last_send_session)
+VALUES($1::varchar, NULL, NULL, false, false, 0, NULL)
 `
 
 func (q *Queries) CreateConvercation(ctx context.Context, convercationID string) error {

@@ -15,6 +15,7 @@ type Conversation struct {
 	IsDelete         bool
 	ConversationType int32
 	LastSendSession  pgtype.Text
+	IsArchive        bool
 }
 
 type ConversationSessionID struct {

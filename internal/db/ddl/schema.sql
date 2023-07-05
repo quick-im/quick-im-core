@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS public.conversations (
 	is_delete bool NOT NULL DEFAULT false,
 	conversation_type int4 NOT NULL DEFAULT 0,
 	last_send_session varchar NULL,
+	is_archive bool NOT NULL DEFAULT false,
 	CONSTRAINT conversations_pk PRIMARY KEY (conversation_id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS conversations_conversation_id_idx ON public.conversations USING btree (conversation_id);
