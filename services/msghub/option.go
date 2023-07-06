@@ -40,6 +40,9 @@ func WithUseConsulRegistry(useConsulRegistry bool) Option {
 
 func WithConsulServer(consulServer string) Option {
 	return func(rs *rpcxServer) {
+		if rs.consulServers == nil {
+			rs.consulServers = make([]string, 0)
+		}
 		rs.consulServers = append(rs.consulServers, consulServer)
 	}
 }

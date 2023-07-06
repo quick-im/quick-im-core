@@ -10,3 +10,9 @@ type ContentKey string
 type PgCtxType = *pgxpool.Pool
 type RedisCtxType = *redis.Client
 type LoggerCtxType = *zap.Logger
+
+type msgGroupTopic string
+
+var (
+	PersistenceGroup msgGroupTopic = "msg.to.persistence"
+)

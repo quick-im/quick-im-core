@@ -21,6 +21,7 @@ type rpcxServer struct {
 	trackAgentHostPort string
 	useConsulRegistry  bool
 	consulServers      []string
+	natsServers        []string
 }
 
 func NewServer(opts ...Option) *rpcxServer {
