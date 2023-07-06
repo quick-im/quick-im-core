@@ -8,9 +8,12 @@ import (
 
 	"github.com/quick-im/quick-im-core/internal/contant"
 	"github.com/quick-im/quick-im-core/internal/db"
+	"github.com/quick-im/quick-im-core/internal/logger"
+	"github.com/quick-im/quick-im-core/internal/logger/innerzap"
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
 	cserver "github.com/rpcxio/rpcx-consul/serverplugin"
 	"github.com/smallnest/rpcx/server"
+	"go.uber.org/zap/zapcore"
 )
 
 type rpcxServer struct {
@@ -22,12 +25,22 @@ type rpcxServer struct {
 	useConsulRegistry  bool
 	consulServers      []string
 	natsServers        []string
+	logger             logger.Logger
 }
 
 func NewServer(opts ...Option) *rpcxServer {
 	ser := &rpcxServer{}
 	for i := range opts {
 		opts[i](ser)
+	}
+	if ser.logger == nil {
+		ser.logger = innerzap.NewZapLoggerAdapter(
+			innerzap.NewLoggerWithOpt(
+				innerzap.WithLogLevel(zapcore.DebugLevel),
+				innerzap.WithServiceName(SERVER_NAME),
+				innerzap.WithLogPath("logs"),
+			).NewLogger(),
+		)
 	}
 	return ser
 }
@@ -48,6 +61,7 @@ func (s *rpcxServer) Start() error {
 		db.WithPassword("123456"),
 		db.WithDbName("quickim"),
 	)
+	s.addRegistryPlugin(ser)
 	ctx = context.WithValue(ctx, contant.CTX_POSTGRES_KEY, dbOpt.GetDb())
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_CREATE_CONVERSATION, s.CreateConvercation(ctx), "")
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_JOIN_CONVERSATION, s.JoinConvercation(ctx), "")

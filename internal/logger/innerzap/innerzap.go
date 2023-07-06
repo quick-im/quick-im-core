@@ -1,4 +1,4 @@
-package zap
+package innerzap
 
 import (
 	"fmt"
@@ -60,7 +60,7 @@ func (h *dateHook) Write(p []byte) (n int, err error) {
 	return h.file.Write(p)
 }
 
-type logger = *zap.Logger
+type Logger = *zap.Logger
 
 type loggerOpt struct {
 	logPath     string
@@ -100,7 +100,7 @@ func WithLogLevel(level zapcore.Level) logOpt {
 	}
 }
 
-func (l *loggerOpt) NewLogger() (logger, error) {
+func (l *loggerOpt) NewLogger() Logger {
 	// 创建日志文件的Hook
 	hook := &dateHook{
 		logPath:     l.logPath,
@@ -123,5 +123,5 @@ func (l *loggerOpt) NewLogger() (logger, error) {
 	// 创建Logger对象
 	logger := zap.New(core, zap.AddCaller())
 
-	return logger, nil
+	return logger
 }

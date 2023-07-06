@@ -1,5 +1,10 @@
 package conversation
 
+import (
+	"github.com/quick-im/quick-im-core/internal/logger/innerzap"
+	"go.uber.org/zap/zapcore"
+)
+
 type Option func(*rpcxServer)
 
 func WithIp(ip string) Option {
@@ -65,5 +70,17 @@ func WithNatsServer(natsServer string) Option {
 func WithNatsServers(natsServers ...string) Option {
 	return func(rs *rpcxServer) {
 		rs.natsServers = natsServers
+	}
+}
+
+func WithLogger(serviceName, logPath string, logLevel zapcore.Level) Option {
+	return func(rs *rpcxServer) {
+		rs.logger = innerzap.NewZapLoggerAdapter(
+			innerzap.NewLoggerWithOpt(
+				innerzap.WithLogLevel(logLevel),
+				innerzap.WithLogPath(logPath),
+				innerzap.WithServiceName(serviceName),
+			).NewLogger(),
+		)
 	}
 }

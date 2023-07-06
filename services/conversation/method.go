@@ -2,6 +2,7 @@ package conversation
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -33,13 +34,16 @@ func (s *rpcxServer) CreateConvercation(ctx context.Context) createConvercationF
 	dbObj := db.New(ctxDb)
 	return func(ctx context.Context, args CreateConvercationArgs, reply *CreateConvercationReply) error {
 		if args.ConversationType > conversationTypeMax {
+			s.logger.Error("CreateConvercation ConversationType Err", "CreateConvercationArgsType:", fmt.Sprintf("%d", args.ConversationType))
 			return quickim_errors.ErrConversationTypeRange
 		}
 		if len(args.SessionList) < 1 {
+			s.logger.Error("CreateConvercation ConversationNumberRange Err", "args:", fmt.Sprintf("%+v", args))
 			return quickim_errors.ErrConversationNumberRange
 		}
 		reply.ConversationID = uuid.New().String()
 		if err := dbObj.CreateConvercation(ctx, reply.ConversationID); err != nil {
+			s.logger.Error("CreateConvercation To Db Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
 		sessions := make([]db.SessionJoinsConvercationUseCopyFromParams, len(args.SessionList))
@@ -50,6 +54,7 @@ func (s *rpcxServer) CreateConvercation(ctx context.Context) createConvercationF
 			}
 		}
 		if _, err := dbObj.SessionJoinsConvercationUseCopyFrom(ctx, sessions); err != nil {
+			s.logger.Error("CreateConvercation SessionJoinsConvercationUseCopyFrom Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
 		return nil
@@ -66,6 +71,7 @@ func (s *rpcxServer) JoinConvercation(ctx context.Context) JoinConvercationFn {
 	dbObj := db.New(ctxDb)
 	return func(ctx context.Context, args JoinConvercationArgs, reply *JoinConvercationReply) error {
 		if len(args.SessionList) < 1 {
+			s.logger.Error("JoinConvercation ConversationNumberRange Err", "args:", fmt.Sprintf("%+v", args))
 			return quickim_errors.ErrConversationNumberRange
 		}
 		sessions := make([]db.SessionJoinsConvercationUseCopyFromParams, len(args.SessionList))
@@ -76,6 +82,7 @@ func (s *rpcxServer) JoinConvercation(ctx context.Context) JoinConvercationFn {
 			}
 		}
 		if _, err := dbObj.SessionJoinsConvercationUseCopyFrom(ctx, sessions); err != nil {
+			s.logger.Error("JoinConvercation SessionJoinsConvercationUseCopyFrom Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
 		return nil
@@ -99,6 +106,7 @@ func (r *rpcxServer) GetJoinedConversations(ctx context.Context) getJoinedConver
 	return func(ctx context.Context, args GetJoinedConversationsArgs, reply *GetJoinedConversationsReply) error {
 		list, err := dbObj.GetJoinedConversations(ctx, args.SessionId)
 		if err != nil {
+			r.logger.Error("GetJoinedConversations GetJoinedConversations Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
 		reply.Conversations = make([]string, len(list))
@@ -131,6 +139,7 @@ func (r *rpcxServer) CheckJoinedConversation(ctx context.Context) checkJoinedCon
 			ConvercationID: args.ConversationId,
 		})
 		if err != nil {
+			r.logger.Error("CheckJoinedConversation CheckJoinedonversation Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
 		if n > 0 {
@@ -163,7 +172,7 @@ func (r *rpcxServer) KickoutForConversation(ctx context.Context) kickoutJoinedCo
 		}
 		dbObj.KickoutForConversation(ctx, params).Exec(func(i int, err error) {
 			if err != nil {
-				//TODO: 某一行出错则打印日志
+				r.logger.Error("KickoutForConversation KickoutForConversation Err:", fmt.Sprintf("record: %d,arg: %+v", i, params[i]), " err:", err.Error())
 			}
 		})
 		return nil
@@ -192,6 +201,7 @@ func (r *rpcxServer) GetConversationInfo(ctx context.Context) GetConversationInf
 	return func(ctx context.Context, args GetConversationInfoArgs, reply *GetConversationInfoReply) error {
 		info, err := dbObj.GetConversationInfo(ctx, args.ConversationId)
 		if err != nil {
+			r.logger.Error("GetConversationInfo GetConversationInfo Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
 		reply.ConversationType = info.ConversationType
@@ -220,7 +230,7 @@ func (r *rpcxServer) SetDeleteConversation(ctx context.Context) SetDeleteConvers
 	return func(ctx context.Context, args SetDeleteConversationArgs, reply *SetDeleteConversationReply) error {
 		dbObj.DeleteConversations(ctx, args.ConversationId).Exec(func(i int, err error) {
 			if err != nil {
-				//TODO: 某条记录出错的时候打印日志
+				r.logger.Error("SetDeleteConversation DeleteConversations Err:", fmt.Sprintf("record: %d,arg: %+v", i, args.ConversationId[i]), " err:", err.Error())
 			}
 		})
 		return nil
@@ -245,13 +255,13 @@ func (r *rpcxServer) SetArchiveConversations(ctx context.Context) SetArchiveConv
 		if args.IsArchive {
 			dbObj.ArchiveConversations(ctx, args.ConversationId).Exec(func(i int, err error) {
 				if err != nil {
-					//TODO: 某条记录出错的时候打印日志
+					r.logger.Error("SetArchiveConversations ArchiveConversations Err:", fmt.Sprintf("record: %d,arg: %+v", i, args.ConversationId[i]), " err:", err.Error())
 				}
 			})
 		} else {
 			dbObj.UnArchiveConversations(ctx, args.ConversationId).Exec(func(i int, err error) {
 				if err != nil {
-					//TODO: 某条记录出错的时候打印日志
+					r.logger.Error("SetArchiveConversations UnArchiveConversations Err:", fmt.Sprintf("record: %d,arg: %+v", i, args.ConversationId[i]), " err:", err.Error())
 				}
 			})
 		}
@@ -285,7 +295,7 @@ func (r *rpcxServer) UpdateConversationLastMsg(ctx context.Context) UpdateConver
 			ConversationID:  args.ConversationId,
 		})
 		if err != nil {
-			// 记录日志
+			r.logger.Error("UpdateConversationLastMsg UpdateConversationLastMsg Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 		}
 		return err
 	}

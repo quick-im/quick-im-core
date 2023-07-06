@@ -6,9 +6,12 @@ import (
 	"log"
 	"time"
 
+	"github.com/quick-im/quick-im-core/internal/logger"
+	"github.com/quick-im/quick-im-core/internal/logger/innerzap"
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
 	cserver "github.com/rpcxio/rpcx-consul/serverplugin"
 	"github.com/smallnest/rpcx/server"
+	"go.uber.org/zap/zapcore"
 )
 
 type rpcxServer struct {
@@ -19,14 +22,22 @@ type rpcxServer struct {
 	trackAgentHostPort string
 	useConsulRegistry  bool
 	consulServers      []string
+	logger             logger.Logger
 }
 
 func NewServer(opts ...Option) *rpcxServer {
-	ser := &rpcxServer{
-		consulServers: make([]string, 0),
-	}
+	ser := &rpcxServer{}
 	for i := range opts {
 		opts[i](ser)
+	}
+	if ser.logger == nil {
+		ser.logger = innerzap.NewZapLoggerAdapter(
+			innerzap.NewLoggerWithOpt(
+				innerzap.WithLogLevel(zapcore.DebugLevel),
+				innerzap.WithServiceName(SERVER_NAME),
+				innerzap.WithLogPath("logs"),
+			).NewLogger(),
+		)
 	}
 	return ser
 }
