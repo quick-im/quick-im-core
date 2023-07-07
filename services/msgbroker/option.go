@@ -75,10 +75,12 @@ func WithNatsServers(natsServers ...string) Option {
 
 func WithLogger(serviceName, logPath string, logLevel zapcore.Level) Option {
 	return func(rs *rpcxServer) {
-		rs.logger = innerzap.NewLoggerWithOpt(
-			innerzap.WithLogLevel(logLevel),
-			innerzap.WithLogPath(logPath),
-			innerzap.WithServiceName(serviceName),
-		).NewLogger()
+		rs.logger = innerzap.NewZapLoggerAdapter(
+			innerzap.NewLoggerWithOpt(
+				innerzap.WithLogLevel(logLevel),
+				innerzap.WithLogPath(logPath),
+				innerzap.WithServiceName(serviceName),
+			).NewLogger(),
+		)
 	}
 }
