@@ -48,3 +48,24 @@ WHERE session_id = $1 AND convercation_id=$2;
 UPDATE public.conversations
 SET last_msg_id= @last_msg_id::varchar, last_send_time=$1, last_send_session= @last_send_session::varchar
 WHERE conversation_id= @conversation_id::varchar;
+
+-- name: SaveMsgToDb :batchexec
+INSERT INTO public.messages
+(msg_id, convercation_id, from_session, send_time, status, "type", "content")
+VALUES($1, $2, $3, $4, $5, $6, $7);
+
+-- name: GetMsgFromDbInRange :many
+SELECT msg_id, convercation_id, from_session, send_time, status, "type", "content"
+FROM public.messages WHERE convercation_id = @convercation_id::text BETWEEN @start_msg_id::text AND @end_msg_id::text;
+
+-- name: GetLast30MsgFromDb :many
+SELECT msg_id, convercation_id, from_session, send_time, status, "type", "content"
+FROM public.messages WHERE convercation_id = @convercation_id::text ORDER BY msg_id DESC LIMIT 30;
+
+-- name: GetThe30MsgBeforeTheId :many
+SELECT msg_id, convercation_id, from_session, send_time, status, "type", "content"
+FROM public.messages WHERE convercation_id = @convercation_id::text AND msg_id < @msg_id::text ORDER BY msg_id DESC LIMIT 30;
+
+-- name: GetThe30MsgAfterTheId :many
+SELECT msg_id, convercation_id, from_session, send_time, status, "type", "content"
+FROM public.messages WHERE convercation_id = @convercation_id::text AND msg_id > @msg_id::text ORDER BY msg_id ASC LIMIT 30;

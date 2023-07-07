@@ -1,10 +1,13 @@
 package persistence
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
 
+	"github.com/quick-im/quick-im-core/internal/contant"
+	"github.com/quick-im/quick-im-core/internal/db"
 	"github.com/quick-im/quick-im-core/internal/logger"
 	"github.com/quick-im/quick-im-core/internal/logger/innerzap"
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
@@ -49,8 +52,17 @@ func (s *rpcxServer) Start() error {
 		tracer, ctx := plugin.AddServerTrace(ser, s.serviceName, s.trackAgentHostPort)
 		defer tracer.Shutdown(ctx)
 	}
+	ctx := context.Background()
+	dbOpt := db.NewPostgresWithOpt(
+		db.WithHost("localhost"),
+		db.WithPort(5432),
+		db.WithUsername("postgres"),
+		db.WithPassword("123456"),
+		db.WithDbName("quickim"),
+	)
+	ctx = context.WithValue(ctx, contant.CTX_POSTGRES_KEY, dbOpt.GetDb())
 	s.addRegistryPlugin(ser)
-	// _ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_GENERATE_MESSAGE_ID, s.GenerateMessageID, "")
+	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_SAVE_MSG_TO_DB, s.SaveMsgToDb(ctx), "")
 	return ser.Serve("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
 }
 

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/quick-im/quick-im-core/internal/contant"
 	"github.com/quick-im/quick-im-core/internal/db"
@@ -156,7 +155,7 @@ type KickoutForConversationArgs struct {
 }
 
 type KickoutForConversationReply struct {
-	Kickouted bool
+	Failed []string
 }
 
 type kickoutJoinedConversationFn func(ctx context.Context, args KickoutForConversationArgs, reply *KickoutForConversationReply) error
@@ -172,6 +171,10 @@ func (r *rpcxServer) KickoutForConversation(ctx context.Context) kickoutJoinedCo
 		}
 		dbObj.KickoutForConversation(ctx, params).Exec(func(i int, err error) {
 			if err != nil {
+				if reply.Failed == nil {
+					reply.Failed = make([]string, 0)
+				}
+				reply.Failed = append(reply.Failed, args.SessionId[i])
 				r.logger.Error("KickoutForConversation KickoutForConversation Err:", fmt.Sprintf("record: %d,arg: %+v", i, params[i]), " err:", err.Error())
 			}
 		})
@@ -185,12 +188,7 @@ type GetConversationInfoArgs struct {
 }
 
 type GetConversationInfoReply struct {
-	LasMsgId         string
-	LastSendTime     time.Time
-	LastSendSession  string
-	ConversationType int32
-	IsDelete         bool
-	IsArchive        bool
+	db.Conversation
 }
 
 type GetConversationInfoFn func(ctx context.Context, args GetConversationInfoArgs, reply *GetConversationInfoReply) error
@@ -204,12 +202,7 @@ func (r *rpcxServer) GetConversationInfo(ctx context.Context) GetConversationInf
 			r.logger.Error("GetConversationInfo GetConversationInfo Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
-		reply.ConversationType = info.ConversationType
-		reply.IsArchive = info.IsArchive
-		reply.IsDelete = info.IsDelete
-		reply.LasMsgId = info.LastMsgID.String
-		reply.LastSendSession = info.LastSendSession.String
-		reply.LastSendTime = info.LastSendTime.Time
+		reply.Conversation = info
 		return nil
 	}
 }
@@ -220,6 +213,7 @@ type SetDeleteConversationArgs struct {
 }
 
 type SetDeleteConversationReply struct {
+	Failed []string
 }
 
 type SetDeleteConversationFn func(ctx context.Context, args SetDeleteConversationArgs, reply *SetDeleteConversationReply) error
@@ -230,6 +224,10 @@ func (r *rpcxServer) SetDeleteConversation(ctx context.Context) SetDeleteConvers
 	return func(ctx context.Context, args SetDeleteConversationArgs, reply *SetDeleteConversationReply) error {
 		dbObj.DeleteConversations(ctx, args.ConversationId).Exec(func(i int, err error) {
 			if err != nil {
+				if reply.Failed == nil {
+					reply.Failed = make([]string, 0)
+				}
+				reply.Failed = append(reply.Failed, args.ConversationId[i])
 				r.logger.Error("SetDeleteConversation DeleteConversations Err:", fmt.Sprintf("record: %d,arg: %+v", i, args.ConversationId[i]), " err:", err.Error())
 			}
 		})
@@ -244,6 +242,7 @@ type SetArchiveConversationsArgs struct {
 }
 
 type SetArchiveConversationsReply struct {
+	Failed []string
 }
 
 type SetArchiveConversationsFn func(ctx context.Context, args SetArchiveConversationsArgs, reply *SetArchiveConversationsReply) error
@@ -255,12 +254,20 @@ func (r *rpcxServer) SetArchiveConversations(ctx context.Context) SetArchiveConv
 		if args.IsArchive {
 			dbObj.ArchiveConversations(ctx, args.ConversationId).Exec(func(i int, err error) {
 				if err != nil {
+					if reply.Failed == nil {
+						reply.Failed = make([]string, 0)
+					}
+					reply.Failed = append(reply.Failed, args.ConversationId[i])
 					r.logger.Error("SetArchiveConversations ArchiveConversations Err:", fmt.Sprintf("record: %d,arg: %+v", i, args.ConversationId[i]), " err:", err.Error())
 				}
 			})
 		} else {
 			dbObj.UnArchiveConversations(ctx, args.ConversationId).Exec(func(i int, err error) {
 				if err != nil {
+					if reply.Failed == nil {
+						reply.Failed = make([]string, 0)
+					}
+					reply.Failed = append(reply.Failed, args.ConversationId[i])
 					r.logger.Error("SetArchiveConversations UnArchiveConversations Err:", fmt.Sprintf("record: %d,arg: %+v", i, args.ConversationId[i]), " err:", err.Error())
 				}
 			})
@@ -273,7 +280,7 @@ func (r *rpcxServer) SetArchiveConversations(ctx context.Context) SetArchiveConv
 type UpdateConversationLastMsgArgs struct {
 	ConversationId  string
 	MsgId           string
-	LastTime        time.Time
+	LastTime        *time.Time
 	LastSendSession string
 }
 
@@ -287,9 +294,7 @@ func (r *rpcxServer) UpdateConversationLastMsg(ctx context.Context) UpdateConver
 	dbObj := db.New(ctxDb)
 	return func(ctx context.Context, args UpdateConversationLastMsgArgs, reply *UpdateConversationLastMsgReply) error {
 		err := dbObj.UpdateConversationLastMsg(ctx, db.UpdateConversationLastMsgParams{
-			LastSendTime: pgtype.Timestamp{
-				Time: args.LastTime,
-			},
+			LastSendTime:    args.LastTime,
 			LastMsgID:       args.MsgId,
 			LastSendSession: args.LastSendSession,
 			ConversationID:  args.ConversationId,

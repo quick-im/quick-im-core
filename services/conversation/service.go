@@ -61,8 +61,8 @@ func (s *rpcxServer) Start() error {
 		db.WithPassword("123456"),
 		db.WithDbName("quickim"),
 	)
-	s.addRegistryPlugin(ser)
 	ctx = context.WithValue(ctx, contant.CTX_POSTGRES_KEY, dbOpt.GetDb())
+	s.addRegistryPlugin(ser)
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_CREATE_CONVERSATION, s.CreateConvercation(ctx), "")
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_JOIN_CONVERSATION, s.JoinConvercation(ctx), "")
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_ARCHIVE_CONVERCATIONS, s.SetArchiveConversations(ctx), "")
