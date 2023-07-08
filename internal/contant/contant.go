@@ -11,6 +11,13 @@ type PgCtxType = *pgxpool.Pool
 type RedisCtxType = *redis.Client
 type LoggerCtxType = *zap.Logger
 
+type Sort bool
+
+var (
+	Desc Sort = true
+	Asc  Sort = false
+)
+
 type msgGroupTopic string
 
 var (

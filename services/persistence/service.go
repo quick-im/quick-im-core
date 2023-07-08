@@ -63,6 +63,10 @@ func (s *rpcxServer) Start() error {
 	ctx = context.WithValue(ctx, contant.CTX_POSTGRES_KEY, dbOpt.GetDb())
 	s.addRegistryPlugin(ser)
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_SAVE_MSG_TO_DB, s.SaveMsgToDb(ctx), "")
+	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_GET_LAST30_MSG_FROM_DB, s.GetLast30MsgFromDb(ctx), "")
+	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_GET_MSG_FROM_DB_IN_RANGE, s.GetMsgFromDbInRange(ctx), "")
+	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_GET_THE_30MSG_AFTER_THE_ID, s.GetThe30MsgAfterTheId(ctx), "")
+	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_GET_THE_30MSG_BEFORE_THE_ID, s.GetThe30MsgBeforeTheId(ctx), "")
 	return ser.Serve("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
 }
 
