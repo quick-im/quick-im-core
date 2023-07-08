@@ -31,24 +31,27 @@ services:
     image: nats
     ports:
       - "8222:8222"
-    command: "--cluster_name NATS --cluster nats://0.0.0.0:6222 --http_port 8222 "
+    command: "--cluster_name NATS --cluster nats://0.0.0.0:6222 -p 4222 --http_port 8222 --routes=nats://nats2:6222,nats://nats3:6222 -js -sd /data/jetstream -n nats1"
     volumes:
         - /etc/localtime:/etc/localtime:ro
+        - ./data/nats/nats1:/data/jetstream
     networks: ["quick-im-network"]
     restart: always
-  nats-1:
+  nats2:
     image: nats
-    command: "--cluster_name NATS --cluster nats://0.0.0.0:6222 --routes=nats://ruser:T0pS3cr3t@nats:6222"
+    command: "--cluster_name NATS --cluster nats://0.0.0.0:6222 -p 4222 --routes=nats://nats:6222,nats://nats3:6222 -js -sd /data/jetstream -n nats2"
     volumes:
         - /etc/localtime:/etc/localtime:ro
+        - ./data/nats/nats2:/data/jetstream
     networks: ["quick-im-network"]
     restart: always
     depends_on: ["nats"]
-  nats-2:
+  nats3:
     image: nats
-    command: "--cluster_name NATS --cluster nats://0.0.0.0:6222 --routes=nats://ruser:T0pS3cr3t@nats:6222"
+    command: "--cluster_name NATS --cluster nats://0.0.0.0:6222 -p 4222 --routes=nats://nats:6222,nats2://nats:6222 -js -sd /data/jetstream -n nats3"
     volumes:
         - /etc/localtime:/etc/localtime:ro
+        - ./data/nats/nats3:/data/jetstream
     networks: ["quick-im-network"]
     restart: always
     depends_on: ["nats"]
