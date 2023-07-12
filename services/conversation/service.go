@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/quick-im/quick-im-core/internal/contant"
 	"github.com/quick-im/quick-im-core/internal/db"
 	"github.com/quick-im/quick-im-core/internal/logger"
@@ -59,14 +60,9 @@ func (s *rpcxServer) Start() error {
 	}
 	// ser.Plugins.Add(opentracingrpc.ServerPlugin(tracer))
 	ctx := context.Background()
-	dbOpt := db.NewPostgresWithOpt(
-		db.WithHost("localhost"),
-		db.WithPort(5432),
-		db.WithUsername("postgres"),
-		db.WithPassword("123456"),
-		db.WithDbName("quickim"),
-	)
-	ctx = context.WithValue(ctx, contant.CTX_POSTGRES_KEY, dbOpt.GetDb())
+	db := s.InitDb()
+	defer db.Close()
+	ctx = context.WithValue(ctx, contant.CTX_POSTGRES_KEY, db)
 	s.addRegistryPlugin(ser)
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_CREATE_CONVERSATION, s.CreateConvercation(ctx), "")
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_JOIN_CONVERSATION, s.JoinConvercation(ctx), "")
@@ -95,4 +91,14 @@ func (s *rpcxServer) addRegistryPlugin(ser *server.Server) {
 		log.Fatal(err)
 	}
 	ser.Plugins.Add(r)
+}
+
+func (s *rpcxServer) InitDb() *pgxpool.Pool {
+	return db.NewPostgresWithOpt(
+		db.WithHost("localhost"),
+		db.WithPort(5432),
+		db.WithUsername("postgres"),
+		db.WithPassword("123456"),
+		db.WithDbName("quickim"),
+	).GetDb()
 }

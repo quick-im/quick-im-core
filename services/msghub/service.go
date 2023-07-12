@@ -6,8 +6,11 @@ import (
 	"log"
 	"time"
 
+	"github.com/nats-io/nats.go"
+	"github.com/quick-im/quick-im-core/internal/contant"
 	"github.com/quick-im/quick-im-core/internal/logger"
 	"github.com/quick-im/quick-im-core/internal/logger/innerzap"
+	"github.com/quick-im/quick-im-core/internal/messaging"
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
 	cserver "github.com/rpcxio/rpcx-consul/serverplugin"
 	"github.com/smallnest/rpcx/server"
@@ -57,6 +60,9 @@ func (s *rpcxServer) Start() error {
 	}
 	s.addRegistryPlugin(ser)
 	ctx := context.Background()
+	nc := s.InitNats()
+	ctx = context.WithValue(ctx, contant.CTX_NATS_KEY, nc)
+	defer nc.Close()
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_SEND_MSG, s.SendMsg(ctx), "")
 	return ser.Serve("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
 }
@@ -76,4 +82,24 @@ func (s *rpcxServer) addRegistryPlugin(ser *server.Server) {
 		log.Fatal(err)
 	}
 	ser.Plugins.Add(r)
+}
+
+func (s *rpcxServer) InitNats() *nats.Conn {
+	nc := messaging.NewNatsWithOpt(
+		messaging.WithServers(s.natsServers...),
+	).GetNats()
+	if s.natsEnableJetstream {
+		js, err := nc.JetStream()
+		if err != nil {
+			s.logger.Fatal("get nats jetstream err", fmt.Sprintf("%v", err))
+		}
+		_, err = js.AddStream(&nats.StreamConfig{
+			Name:     "MSG_STREAM",
+			Subjects: []string{"stream.msg.>"},
+		})
+		if err != nil {
+			s.logger.Fatal("add stream to nats jetstream err", fmt.Sprintf("%v", err))
+		}
+	}
+	return nc
 }

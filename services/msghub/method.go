@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/nats-io/nats.go"
 	"github.com/quick-im/quick-im-core/internal/contant"
 	"github.com/quick-im/quick-im-core/internal/rpcx"
 	"github.com/quick-im/quick-im-core/services/msgbroker"
@@ -31,17 +30,7 @@ func (r *rpcxServer) SendMsg(ctx context.Context) sendMsgFn {
 	if !ok {
 		r.logger.Fatal("this service needs to rely on the nats service")
 	}
-	js, err := nc.JetStream()
-	if err != nil {
-		r.logger.Fatal("get nats jetstream err", fmt.Sprintf("%v", err))
-	}
-	_, err = js.AddStream(&nats.StreamConfig{
-		Name:     "MSG_STREAM",
-		Subjects: []string{"stream.msg.>"},
-	})
-	if err != nil {
-		r.logger.Fatal("add stream to nats jetstream err", fmt.Sprintf("%v", err))
-	}
+	_ = nc
 	msgbroker, err := rpcx.NewClient(
 		rpcx.WithServerAddress(fmt.Sprintf("tcp@%s:%d", r.ip, r.port)),
 		rpcx.WithUseConsulRegistry(r.useConsulRegistry),
