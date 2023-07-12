@@ -1,6 +1,7 @@
 package msghub
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -14,18 +15,24 @@ import (
 )
 
 type rpcxServer struct {
-	ip                 string
-	port               uint16
-	openTracing        bool
-	serviceName        string
-	trackAgentHostPort string
-	useConsulRegistry  bool
-	consulServers      []string
-	logger             logger.Logger
+	ip                  string
+	port                uint16
+	openTracing         bool
+	serviceName         string
+	trackAgentHostPort  string
+	useConsulRegistry   bool
+	consulServers       []string
+	natsServers         []string
+	natsEnableJetstream bool
+	logger              logger.Logger
 }
 
 func NewServer(opts ...Option) *rpcxServer {
-	ser := &rpcxServer{}
+	ser := &rpcxServer{
+		consulServers:       make([]string, 0),
+		natsServers:         make([]string, 0),
+		natsEnableJetstream: true,
+	}
 	for i := range opts {
 		opts[i](ser)
 	}
@@ -49,7 +56,8 @@ func (s *rpcxServer) Start() error {
 		defer tracer.Shutdown(ctx)
 	}
 	s.addRegistryPlugin(ser)
-	// _ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_GENERATE_MESSAGE_ID, s.GenerateMessageID, "")
+	ctx := context.Background()
+	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_SEND_MSG, s.SendMsg(ctx), "")
 	return ser.Serve("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
 }
 

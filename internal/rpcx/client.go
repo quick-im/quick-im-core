@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace"
 )
 
-type rpcxClientOpt struct {
+type RpcxClientWithOpt struct {
 	openTracing              bool
 	useConsulRegistry        bool
 	serviceName              string
@@ -27,52 +27,52 @@ type rpcxClientOpt struct {
 
 type ctxInitInner string
 
-type rpcxOption func(*rpcxClientOpt)
+type rpcxOption func(*RpcxClientWithOpt)
 
 func WithOpenTracing(disable bool) rpcxOption {
-	return func(rs *rpcxClientOpt) {
+	return func(rs *RpcxClientWithOpt) {
 		rs.openTracing = disable
 	}
 }
 
 func WithServiceName(serviceName string) rpcxOption {
-	return func(rs *rpcxClientOpt) {
+	return func(rs *RpcxClientWithOpt) {
 		rs.serviceName = serviceName
 	}
 }
 
 func WithJeagerAgentHostPort(JaegeragentHostPort string) rpcxOption {
-	return func(rs *rpcxClientOpt) {
+	return func(rs *RpcxClientWithOpt) {
 		rs.trackJaegeragentHostPort = JaegeragentHostPort
 	}
 }
 
 func WithServerAddress(server string) rpcxOption {
-	return func(rco *rpcxClientOpt) {
+	return func(rco *RpcxClientWithOpt) {
 		rco.serverAddress = server
 	}
 }
 
 func WithUseConsulRegistry(useConsulRegistry bool) rpcxOption {
-	return func(rco *rpcxClientOpt) {
+	return func(rco *RpcxClientWithOpt) {
 		rco.useConsulRegistry = useConsulRegistry
 	}
 }
 
 func WithConsulServer(server string) rpcxOption {
-	return func(rco *rpcxClientOpt) {
+	return func(rco *RpcxClientWithOpt) {
 		rco.consulServers = append(rco.consulServers, server)
 	}
 }
 
 func WithConsulServers(servers ...string) rpcxOption {
-	return func(rco *rpcxClientOpt) {
+	return func(rco *RpcxClientWithOpt) {
 		rco.consulServers = servers
 	}
 }
 
-func NewClient(opts ...rpcxOption) (*rpcxClientOpt, error) {
-	c := &rpcxClientOpt{
+func NewClient(opts ...rpcxOption) (*RpcxClientWithOpt, error) {
+	c := &RpcxClientWithOpt{
 		consulServers: make([]string, 0),
 	}
 	for i := range opts {
@@ -92,18 +92,18 @@ func NewClient(opts ...rpcxOption) (*rpcxClientOpt, error) {
 	return c, nil
 }
 
-func (s *rpcxClientOpt) Close() error {
+func (s *RpcxClientWithOpt) Close() error {
 	return s.xclient.Close()
 }
 
-func (s *rpcxClientOpt) ShutdownTrace() error {
+func (s *RpcxClientWithOpt) ShutdownTrace() error {
 	if s.tracePtr == nil {
 		return quickim_errors.ErrTraceClosed
 	}
 	return s.tracePtr.Shutdown(s.ctx)
 }
 
-func (s *rpcxClientOpt) CloseAndShutdownTrace() error {
+func (s *RpcxClientWithOpt) CloseAndShutdownTrace() error {
 	var err error
 	err1 := s.xclient.Close()
 	if err1 != nil {
@@ -118,12 +118,12 @@ func (s *rpcxClientOpt) CloseAndShutdownTrace() error {
 	return err
 }
 
-func (s *rpcxClientOpt) Call(ctx context.Context, serviceMethod string, arg interface{}, replay interface{}) error {
+func (s *RpcxClientWithOpt) Call(ctx context.Context, serviceMethod string, arg interface{}, replay interface{}) error {
 	ctxInner := context.WithValue(s.ctx, ctxInitInner("initCtx"), nil)
 	return s.xclient.Call(ctxInner, serviceMethod, arg, replay)
 }
 
-func (s *rpcxClientOpt) addTrace(xclient client.XClient) (*trace.TracerProvider, context.Context) {
+func (s *RpcxClientWithOpt) addTrace(xclient client.XClient) (*trace.TracerProvider, context.Context) {
 	// 添加 Jaeger 拦截器
 	plugins := client.NewPluginContainer()
 	tracer, ctx, err := tracing.InitJaeger("client", s.trackJaegeragentHostPort)

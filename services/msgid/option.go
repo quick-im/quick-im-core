@@ -58,6 +58,27 @@ func WithConsulServers(consulServers ...string) Option {
 	}
 }
 
+func WithNatsServer(natsServer string) Option {
+	return func(rs *rpcxServer) {
+		if rs.natsServers == nil {
+			rs.natsServers = make([]string, 0)
+		}
+		rs.natsServers = append(rs.natsServers, natsServer)
+	}
+}
+
+func WithNatsServers(natsServers ...string) Option {
+	return func(rs *rpcxServer) {
+		rs.natsServers = natsServers
+	}
+}
+
+func WithNatsDisableJetstream() Option {
+	return func(rs *rpcxServer) {
+		rs.natsEnableJetstream = false
+	}
+}
+
 func WithLogger(serviceName, logPath string, logLevel zapcore.Level) Option {
 	return func(rs *rpcxServer) {
 		rs.logger = innerzap.NewZapLoggerAdapter(

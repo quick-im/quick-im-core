@@ -17,19 +17,24 @@ import (
 )
 
 type rpcxServer struct {
-	ip                 string
-	port               uint16
-	openTracing        bool
-	serviceName        string
-	trackAgentHostPort string
-	useConsulRegistry  bool
-	consulServers      []string
-	natsServers        []string
-	logger             logger.Logger
+	ip                  string
+	port                uint16
+	openTracing         bool
+	serviceName         string
+	trackAgentHostPort  string
+	useConsulRegistry   bool
+	consulServers       []string
+	natsServers         []string
+	natsEnableJetstream bool
+	logger              logger.Logger
 }
 
 func NewServer(opts ...Option) *rpcxServer {
-	ser := &rpcxServer{}
+	ser := &rpcxServer{
+		consulServers:       make([]string, 0),
+		natsServers:         make([]string, 0),
+		natsEnableJetstream: true,
+	}
 	for i := range opts {
 		opts[i](ser)
 	}

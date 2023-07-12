@@ -31,6 +31,7 @@ services:
     image: nats
     ports:
       - "8222:8222"
+      - "4222:4222"
     command: "--cluster_name NATS --cluster nats://0.0.0.0:6222 -p 4222 --http_port 8222 --routes=nats://nats2:6222,nats://nats3:6222 -js -sd /data/jetstream -n nats1"
     volumes:
         - /etc/localtime:/etc/localtime:ro

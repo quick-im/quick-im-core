@@ -73,6 +73,12 @@ func WithNatsServers(natsServers ...string) Option {
 	}
 }
 
+func WithNatsDisableJetstream() Option {
+	return func(rs *rpcxServer) {
+		rs.natsEnableJetstream = false
+	}
+}
+
 func WithLogger(serviceName, logPath string, logLevel zapcore.Level) Option {
 	return func(rs *rpcxServer) {
 		rs.logger = innerzap.NewZapLoggerAdapter(
