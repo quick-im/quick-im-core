@@ -123,6 +123,11 @@ func (s *RpcxClientWithOpt) Call(ctx context.Context, serviceMethod string, arg 
 	return s.xclient.Call(ctxInner, serviceMethod, arg, replay)
 }
 
+func (s *RpcxClientWithOpt) Broadcast(ctx context.Context, serviceMethod string, arg interface{}, replay interface{}) error {
+	ctxInner := context.WithValue(s.ctx, ctxInitInner("initCtx"), nil)
+	return s.xclient.Broadcast(ctxInner, serviceMethod, arg, replay)
+}
+
 func (s *RpcxClientWithOpt) addTrace(xclient client.XClient) (*trace.TracerProvider, context.Context) {
 	// 添加 Jaeger 拦截器
 	plugins := client.NewPluginContainer()

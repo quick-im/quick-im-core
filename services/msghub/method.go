@@ -2,12 +2,9 @@ package msghub
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/quick-im/quick-im-core/internal/contant"
-	"github.com/quick-im/quick-im-core/internal/rpcx"
-	"github.com/quick-im/quick-im-core/services/msgbroker"
 )
 
 type SendMsgArgs struct {
@@ -31,18 +28,6 @@ func (r *rpcxServer) SendMsg(ctx context.Context) sendMsgFn {
 		r.logger.Fatal("this service needs to rely on the nats service")
 	}
 	_ = nc
-	msgbroker, err := rpcx.NewClient(
-		rpcx.WithServerAddress(fmt.Sprintf("tcp@%s:%d", r.ip, r.port)),
-		rpcx.WithUseConsulRegistry(r.useConsulRegistry),
-		rpcx.WithConsulServers(r.consulServers...),
-		rpcx.WithServiceName(msgbroker.SERVER_NAME),
-		rpcx.WithOpenTracing(r.openTracing),
-		rpcx.WithJeagerAgentHostPort(r.trackAgentHostPort),
-	)
-	if err != nil {
-		r.logger.Fatal("init msgborker err", fmt.Sprintf("%v", err))
-	}
-	_ = msgbroker
 	return func(ctx context.Context, args SendMsgArgs, reply *SendMsgReply) error {
 		return nil
 	}

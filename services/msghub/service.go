@@ -11,7 +11,9 @@ import (
 	"github.com/quick-im/quick-im-core/internal/logger"
 	"github.com/quick-im/quick-im-core/internal/logger/innerzap"
 	"github.com/quick-im/quick-im-core/internal/messaging"
+	"github.com/quick-im/quick-im-core/internal/rpcx"
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
+	"github.com/quick-im/quick-im-core/services/persistence"
 	cserver "github.com/rpcxio/rpcx-consul/serverplugin"
 	"github.com/smallnest/rpcx/server"
 	"go.uber.org/zap/zapcore"
@@ -61,8 +63,11 @@ func (s *rpcxServer) Start() error {
 	s.addRegistryPlugin(ser)
 	ctx := context.Background()
 	nc := s.InitNats()
-	ctx = context.WithValue(ctx, contant.CTX_NATS_KEY, nc)
 	defer nc.Close()
+	ctx = context.WithValue(ctx, contant.CTX_NATS_KEY, nc)
+	persistence := s.InitDepServices(persistence.SERVER_NAME)
+	ctx = context.WithValue(ctx, contant.CTX_SERVICE_PERSISTENCE, persistence)
+	defer persistence.CloseAndShutdownTrace()
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_SEND_MSG, s.SendMsg(ctx), "")
 	return ser.Serve("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
 }
@@ -102,4 +107,18 @@ func (s *rpcxServer) InitNats() *nats.Conn {
 		}
 	}
 	return nc
+}
+
+func (r *rpcxServer) InitDepServices(serviceName string) *rpcx.RpcxClientWithOpt {
+	service, err := rpcx.NewClient(
+		rpcx.WithUseConsulRegistry(r.useConsulRegistry),
+		rpcx.WithConsulServers(r.consulServers...),
+		rpcx.WithServiceName(serviceName),
+		rpcx.WithOpenTracing(r.openTracing),
+		rpcx.WithJeagerAgentHostPort(r.trackAgentHostPort),
+	)
+	if err != nil {
+		r.logger.Fatal("init dep %s err", serviceName, fmt.Sprintf("%v", err))
+	}
+	return service
 }
