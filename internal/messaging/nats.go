@@ -11,6 +11,12 @@ type natsClientOpt struct {
 	servers []string
 }
 
+type NatsWarp struct {
+	nc          *nats.Conn
+	useJsStream bool
+	js          nats.JetStreamContext
+}
+
 type natsOpt func(*natsClientOpt)
 
 func NewNatsWithOpt(opts ...natsOpt) *natsClientOpt {
@@ -35,10 +41,28 @@ func WithServers(servers ...string) natsOpt {
 	}
 }
 
-func (n *natsClientOpt) GetNats() *nats.Conn {
+func (n *natsClientOpt) GetNats() *NatsWarp {
 	nc, err := nats.Connect(strings.Join(n.servers, ","))
 	if err != nil {
 		log.Fatal(err)
 	}
-	return nc
+	return &NatsWarp{
+		nc,
+		false,
+		nil,
+	}
+}
+
+func (n *NatsWarp) JetStream(opts ...nats.JSOpt) (nats.JetStreamContext, error) {
+	js, err := n.nc.JetStream(opts...)
+	if err != nil {
+		return nil, err
+	}
+	n.js = js
+	n.useJsStream = true
+	return js, err
+}
+
+func (n *NatsWarp) Close() {
+	n.nc.Close()
 }

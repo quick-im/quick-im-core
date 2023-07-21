@@ -89,7 +89,7 @@ func (s *rpcxServer) addRegistryPlugin(ser *server.Server) {
 	ser.Plugins.Add(r)
 }
 
-func (s *rpcxServer) InitNats() *nats.Conn {
+func (s *rpcxServer) InitNats() *messaging.NatsWarp {
 	nc := messaging.NewNatsWithOpt(
 		messaging.WithServers(s.natsServers...),
 	).GetNats()
