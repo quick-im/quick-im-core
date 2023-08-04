@@ -13,8 +13,16 @@ INSERT INTO public.conversation_session_id
 VALUES($1, $2);
 
 -- name: GetJoinedConversations :many
-SELECT id, session_id, last_recv_msg_id, is_kick_out, convercation_id
+SELECT id, session_id, last_recv_msg_id, is_kick_out, convercation_id, 0 as unread
 FROM public.conversation_session_id WHERE session_id = @session_id::varchar AND is_kick_out = false;
+
+-- name: GetJoinedConversationsUnReadMsgCount :one
+SELECT count(msg_id) as unread
+FROM public.messages WHERE msg_id BETWEEN @last_recv_msg_id::varchar AND @last_send_msg_id::varchar;
+
+-- name: GetConversationUnReadMsgCount :one
+SELECT count(msg_id) as unread
+FROM public.messages WHERE convercation_id = @convercation_id::varchar AND msg_id BETWEEN @last_recv_msg_id::varchar AND @last_send_msg_id::varchar;
 
 -- name: GetConversationInfo :one
 SELECT conversation_id, last_msg_id, last_send_time, is_delete, conversation_type, last_send_session, is_archive

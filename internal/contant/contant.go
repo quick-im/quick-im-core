@@ -21,9 +21,3 @@ var (
 	Desc Sort = true
 	Asc  Sort = false
 )
-
-type msgGroupTopic string
-
-var (
-	PersistenceGroup msgGroupTopic = "msg.to.persistence"
-)

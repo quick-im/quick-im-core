@@ -70,26 +70,54 @@ func (q *Queries) GetConversationInfo(ctx context.Context, conversationID string
 	return i, err
 }
 
+const getConversationUnReadMsgCount = `-- name: GetConversationUnReadMsgCount :one
+SELECT count(msg_id) as unread
+FROM public.messages WHERE convercation_id = $1::varchar AND msg_id BETWEEN $2::varchar AND $3::varchar
+`
+
+type GetConversationUnReadMsgCountParams struct {
+	ConvercationID string
+	LastRecvMsgID  string
+	LastSendMsgID  string
+}
+
+func (q *Queries) GetConversationUnReadMsgCount(ctx context.Context, arg GetConversationUnReadMsgCountParams) (int64, error) {
+	row := q.db.QueryRow(ctx, getConversationUnReadMsgCount, arg.ConvercationID, arg.LastRecvMsgID, arg.LastSendMsgID)
+	var unread int64
+	err := row.Scan(&unread)
+	return unread, err
+}
+
 const getJoinedConversations = `-- name: GetJoinedConversations :many
-SELECT id, session_id, last_recv_msg_id, is_kick_out, convercation_id
+SELECT id, session_id, last_recv_msg_id, is_kick_out, convercation_id, 0 as unread
 FROM public.conversation_session_id WHERE session_id = $1::varchar AND is_kick_out = false
 `
 
-func (q *Queries) GetJoinedConversations(ctx context.Context, sessionID string) ([]ConversationSessionID, error) {
+type GetJoinedConversationsRow struct {
+	ID             int32
+	SessionID      string
+	LastRecvMsgID  *string
+	IsKickOut      bool
+	ConvercationID string
+	Unread         int32
+}
+
+func (q *Queries) GetJoinedConversations(ctx context.Context, sessionID string) ([]GetJoinedConversationsRow, error) {
 	rows, err := q.db.Query(ctx, getJoinedConversations, sessionID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ConversationSessionID
+	var items []GetJoinedConversationsRow
 	for rows.Next() {
-		var i ConversationSessionID
+		var i GetJoinedConversationsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.SessionID,
 			&i.LastRecvMsgID,
 			&i.IsKickOut,
 			&i.ConvercationID,
+			&i.Unread,
 		); err != nil {
 			return nil, err
 		}
@@ -99,6 +127,23 @@ func (q *Queries) GetJoinedConversations(ctx context.Context, sessionID string) 
 		return nil, err
 	}
 	return items, nil
+}
+
+const getJoinedConversationsUnReadMsgCount = `-- name: GetJoinedConversationsUnReadMsgCount :one
+SELECT count(msg_id) as unread
+FROM public.messages WHERE msg_id BETWEEN $1::varchar AND $2::varchar
+`
+
+type GetJoinedConversationsUnReadMsgCountParams struct {
+	LastRecvMsgID string
+	LastSendMsgID string
+}
+
+func (q *Queries) GetJoinedConversationsUnReadMsgCount(ctx context.Context, arg GetJoinedConversationsUnReadMsgCountParams) (int64, error) {
+	row := q.db.QueryRow(ctx, getJoinedConversationsUnReadMsgCount, arg.LastRecvMsgID, arg.LastSendMsgID)
+	var unread int64
+	err := row.Scan(&unread)
+	return unread, err
 }
 
 const getLast30MsgFromDb = `-- name: GetLast30MsgFromDb :many
