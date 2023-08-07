@@ -6,9 +6,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/quick-im/quick-im-core/internal/contant"
-	"github.com/quick-im/quick-im-core/internal/db"
 	"github.com/quick-im/quick-im-core/internal/logger"
 	"github.com/quick-im/quick-im-core/internal/logger/innerzap"
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
@@ -51,7 +48,7 @@ func NewServer(opts ...Option) *rpcxServer {
 	return ser
 }
 
-func (s *rpcxServer) Start() error {
+func (s *rpcxServer) Start(ctx context.Context) error {
 	ser := server.NewServer()
 	// 在服务端添加 Jaeger 拦截器
 	if s.openTracing {
@@ -59,10 +56,6 @@ func (s *rpcxServer) Start() error {
 		defer tracer.Shutdown(ctx)
 	}
 	// ser.Plugins.Add(opentracingrpc.ServerPlugin(tracer))
-	ctx := context.Background()
-	db := s.InitDb()
-	defer db.Close()
-	ctx = context.WithValue(ctx, contant.CTX_POSTGRES_KEY, db)
 	s.addRegistryPlugin(ser)
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_CREATE_CONVERSATION, s.CreateConvercation(ctx), "")
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_JOIN_CONVERSATION, s.JoinConvercation(ctx), "")
@@ -91,14 +84,4 @@ func (s *rpcxServer) addRegistryPlugin(ser *server.Server) {
 		log.Fatal(err)
 	}
 	ser.Plugins.Add(r)
-}
-
-func (s *rpcxServer) InitDb() *pgxpool.Pool {
-	return db.NewPostgresWithOpt(
-		db.WithHost("localhost"),
-		db.WithPort(5432),
-		db.WithUsername("postgres"),
-		db.WithPassword("123456"),
-		db.WithDbName("quickim"),
-	).GetDb()
 }

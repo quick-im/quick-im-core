@@ -53,7 +53,7 @@ func NewServer(opts ...Option) *rpcxServer {
 	return ser
 }
 
-func (s *rpcxServer) Start() error {
+func (s *rpcxServer) Start(ctx context.Context) error {
 	ser := server.NewServer()
 	// 在服务端添加 Jaeger 拦截器
 	if s.openTracing {
@@ -61,7 +61,6 @@ func (s *rpcxServer) Start() error {
 		defer tracer.Shutdown(ctx)
 	}
 	s.addRegistryPlugin(ser)
-	ctx := context.Background()
 	nc := s.InitNats()
 	defer nc.Close()
 	ctx = context.WithValue(ctx, contant.CTX_NATS_KEY, nc)

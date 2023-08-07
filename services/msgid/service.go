@@ -48,14 +48,13 @@ func NewServer(opts ...Option) *rpcxServer {
 	return ser
 }
 
-func (s *rpcxServer) Start() error {
+func (s *rpcxServer) Start(ctx context.Context) error {
 	ser := server.NewServer()
 	if s.openTracing {
 		tracer, ctx := plugin.AddServerTrace(ser, s.serviceName, s.trackAgentHostPort)
 		defer tracer.Shutdown(ctx)
 	}
 	s.addRegistryPlugin(ser)
-	ctx := context.Background()
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_GENERATE_MESSAGE_ID, s.GenerateMessageID(ctx), "")
 	return ser.Serve("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
 }

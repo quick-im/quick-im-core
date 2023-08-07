@@ -6,8 +6,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/quick-im/quick-im-core/internal/contant"
-	"github.com/quick-im/quick-im-core/internal/db"
 	"github.com/quick-im/quick-im-core/internal/logger"
 	"github.com/quick-im/quick-im-core/internal/logger/innerzap"
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
@@ -50,22 +48,13 @@ func NewServer(opts ...Option) *rpcxServer {
 	return ser
 }
 
-func (s *rpcxServer) Start() error {
+func (s *rpcxServer) Start(ctx context.Context) error {
 	ser := server.NewServer()
 	// 在服务端添加 Jaeger 拦截器
 	if s.openTracing {
 		tracer, ctx := plugin.AddServerTrace(ser, s.serviceName, s.trackAgentHostPort)
 		defer tracer.Shutdown(ctx)
 	}
-	ctx := context.Background()
-	dbOpt := db.NewPostgresWithOpt(
-		db.WithHost("localhost"),
-		db.WithPort(5432),
-		db.WithUsername("postgres"),
-		db.WithPassword("123456"),
-		db.WithDbName("quickim"),
-	)
-	ctx = context.WithValue(ctx, contant.CTX_POSTGRES_KEY, dbOpt.GetDb())
 	s.addRegistryPlugin(ser)
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_SAVE_MSG_TO_DB, s.SaveMsgToDb(ctx), "")
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_GET_LAST30_MSG_FROM_DB, s.GetLast30MsgFromDb(ctx), "")

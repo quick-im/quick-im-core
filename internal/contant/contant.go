@@ -6,6 +6,7 @@ import (
 	"github.com/quick-im/quick-im-core/internal/rpcx"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
+	r "gopkg.in/rethinkdb/rethinkdb-go.v6"
 )
 
 type ContentKey string
@@ -14,6 +15,7 @@ type RedisCtxType = *redis.Client
 type LoggerCtxType = *zap.Logger
 type NatsCtxType = *messaging.NatsWarp
 type RpcxClientCtxType = *rpcx.RpcxClientWithOpt
+type RethinkDbCtxType = *r.Session
 
 type Sort bool
 

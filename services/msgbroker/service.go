@@ -1,6 +1,7 @@
 package msgbroker
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -47,12 +48,12 @@ func NewServer(opts ...Option) *rpcxServer {
 	return ser
 }
 
-func (s *rpcxServer) Start() error {
+func (s *rpcxServer) Start(ctx context.Context) error {
 	ser := server.NewServer()
 	// 在服务端添加 Jaeger 拦截器
 	if s.openTracing {
-		tracer, ctx := plugin.AddServerTrace(ser, s.serviceName, s.trackAgentHostPort)
-		defer tracer.Shutdown(ctx)
+		tracer, ctx1 := plugin.AddServerTrace(ser, s.serviceName, s.trackAgentHostPort)
+		defer tracer.Shutdown(ctx1)
 	}
 	s.addRegistryPlugin(ser)
 	// _ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_GENERATE_MESSAGE_ID, s.GenerateMessageID, "")

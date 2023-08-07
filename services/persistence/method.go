@@ -7,6 +7,7 @@ import (
 
 	"github.com/quick-im/quick-im-core/internal/contant"
 	"github.com/quick-im/quick-im-core/internal/db"
+	"github.com/quick-im/quick-im-core/internal/helper"
 )
 
 // 持久化消息
@@ -21,7 +22,8 @@ type SaveMsgToDbReply struct {
 type saveMsgToDbFn func(context.Context, SaveMsgToDbArgs, *SaveMsgToDbReply) error
 
 func (r *rpcxServer) SaveMsgToDb(ctx context.Context) saveMsgToDbFn {
-	ctxDb := ctx.Value(contant.CTX_POSTGRES_KEY).(contant.PgCtxType)
+	var ctxDb contant.PgCtxType
+	ctxDb = helper.GetCtxValue[contant.PgCtxType](ctx, contant.CTX_POSTGRES_KEY, ctxDb)
 	dbObj := db.New(ctxDb)
 	return func(ctx context.Context, args SaveMsgToDbArgs, reply *SaveMsgToDbReply) error {
 		dbObj.SaveMsgToDb(ctx, args.Msgs).Exec(func(i int, err error) {
