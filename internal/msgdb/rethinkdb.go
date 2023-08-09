@@ -71,7 +71,32 @@ func WithPassword(password string) rethinkOpt {
 	}
 }
 
+// 手动指定表中的主键和索引字段
 func Table(table, pk string, indexs []string) tableInfo {
+	return tableInfo{
+		table: table,
+		pk:    pk,
+		index: indexs,
+	}
+}
+
+// 使用model来解析
+func Model(model any) tableInfo {
+	table, fields, err := parseStruct(model)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "parsing model %#v failed: %v\n", model, err)
+		os.Exit(1)
+	}
+	var pk = ""
+	var indexs = make([]string, 0)
+	for i := range fields {
+		switch {
+		case fields[i].IsPrimaryKey():
+			pk = fields[i].Field
+		case fields[i].IsSimpleIndex():
+			indexs = append(indexs, fields[i].Field)
+		}
+	}
 	return tableInfo{
 		table: table,
 		pk:    pk,
@@ -103,6 +128,7 @@ func (re *rethinkClientOpt) GetRethinkDb() *r.Session {
 	return session
 }
 
+// 对所需数据表和索引进行初始化操作
 func (re *rethinkClientOpt) InitDb() {
 	session, err := r.Connect(r.ConnectOpts{
 		Addresses: re.servers, // endpoint without http
@@ -157,5 +183,6 @@ func (re *rethinkClientOpt) InitDb() {
 				os.Exit(1)
 			}
 		}
+
 	}
 }

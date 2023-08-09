@@ -7,6 +7,7 @@ import (
 	"github.com/quick-im/quick-im-core/internal/db"
 	"github.com/quick-im/quick-im-core/internal/helper"
 	"github.com/quick-im/quick-im-core/internal/msgdb"
+	"github.com/quick-im/quick-im-core/internal/msgdb/model"
 	"github.com/quick-im/quick-im-core/services/persistence"
 )
 
@@ -22,13 +23,15 @@ func main() {
 		msgdb.WithServer("localhost:28015"),
 		msgdb.WithDb("quick-im"),
 		msgdb.WithTables(
-			msgdb.Table("msg", "msg_id", []string{"msg_id1"}),
+			// msgdb.Table("msg", "msg_id", []string{"msg_id1"}),
+			// 二者选其一即可，可手动指定索引，也可通过model来自动创建
+			msgdb.Model(model.Msg{}),
 		),
 	)
 	rethinkDbOpt.InitDb()
 	ctx := helper.InitCtx(context.Background(),
 		helper.CtxOptWarp[contant.PgCtxType](contant.CTX_POSTGRES_KEY, dbOpt.GetDb()),
-		helper.CtxOptWarp[contant.RethinkDbCtxType](contant.CTX_POSTGRES_KEY, rethinkDbOpt.GetRethinkDb()),
+		helper.CtxOptWarp[contant.RethinkDbCtxType](contant.CTX_RETHINK_DB_KEY, rethinkDbOpt.GetRethinkDb()),
 	)
 	if err := persistence.NewServer(
 		persistence.WithIp("0.0.0.0"),
