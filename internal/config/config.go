@@ -11,4 +11,6 @@ const (
 	MqMsgPersistenceGroup msgGroupTopic = "quickim.msg.persistence"
 	// 消息网关单独订阅一个主题，每一个网关都接受消息
 	MqMsgConversationSubject msgGroupTopic = "quickim.msg.conversation"
+	// 消息持久化表
+	RethinkMsgDb = "msg"
 )

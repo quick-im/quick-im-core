@@ -16,14 +16,15 @@ type structInfo struct {
 }
 
 func parseStruct(data any) (string, []structInfo, error) {
-	if !isStruct(data) {
+	rv := reflect.Indirect(reflect.ValueOf(data))
+	if rv.Kind() != reflect.Struct {
 		return "", nil, errNonStruct
 	}
-	t := reflect.TypeOf(data)
-	ret := make([]structInfo, t.NumField())
+	t := rv.Type()
+	ret := make([]structInfo, 0, t.NumField())
 	var name = strings.ToLower(t.Name())
 	for i := 0; i < t.NumField(); i++ {
-		tmp := structInfo{}
+		var tmp structInfo
 		field := t.Field(i)
 		tag := field.Tag.Get("imdb")
 		tmp.Field = strings.ToLower(field.Name)
@@ -37,22 +38,27 @@ func parseStruct(data any) (string, []structInfo, error) {
 		if tag != "" {
 			tmp.Tags = strings.Split(tag, ",")
 		}
-		ret[i] = tmp
+		ret = append(ret, tmp)
 	}
 	return name, ret, nil
 }
 
-func isStruct(v any) bool {
-	rv := reflect.ValueOf(v)
-	if rv.Kind() == reflect.Ptr {
-		rv = rv.Elem()
-	}
-	return rv.Kind() == reflect.Struct
-}
+// func isStruct(v any) bool {
+// 	rv := reflect.ValueOf(v)
+// 	if rv.Kind() == reflect.Ptr {
+// 		rv = rv.Elem()
+// 	}
+// 	return rv.Kind() == reflect.Struct
+// }
+
+// func isStruct(v any) bool {
+// 	rv := reflect.Indirect(reflect.ValueOf(v))
+// 	return rv.Kind() == reflect.Struct
+// }
 
 func (s *structInfo) ContainsTag(tag string) bool {
-	for _, x := range s.Tags {
-		if x == tag {
+	for i := range s.Tags {
+		if s.Tags[i] == tag {
 			return true
 		}
 	}
@@ -67,8 +73,5 @@ func (s *structInfo) IsPrimaryKey() bool {
 }
 
 func (s *structInfo) IsSimpleIndex() bool {
-	if s.ContainsTag("index") {
-		return true
-	}
-	return false
+	return s.ContainsTag("index")
 }

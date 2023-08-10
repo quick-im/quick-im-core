@@ -5,16 +5,14 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/quick-im/quick-im-core/internal/config"
 	"github.com/quick-im/quick-im-core/internal/contant"
+	"github.com/quick-im/quick-im-core/internal/db"
 	"github.com/quick-im/quick-im-core/internal/helper"
-	"github.com/quick-im/quick-im-core/internal/msgdb/model"
-	"gopkg.in/rethinkdb/rethinkdb-go.v6"
 )
 
 // 持久化消息
 type SaveMsgToDbArgs struct {
-	Msgs []model.Msg
+	Msgs []db.SaveMsgToDbParams
 }
 
 type SaveMsgToDbReply struct {
@@ -24,16 +22,18 @@ type SaveMsgToDbReply struct {
 type saveMsgToDbFn func(context.Context, SaveMsgToDbArgs, *SaveMsgToDbReply) error
 
 func (r *rpcxServer) SaveMsgToDb(ctx context.Context) saveMsgToDbFn {
-	var rdb contant.RethinkDbCtxType
-	rdb = helper.GetCtxValue[contant.RethinkDbCtxType](ctx, contant.CTX_RETHINK_DB_KEY, rdb)
+	var ctxDb contant.PgCtxType
+	ctxDb = helper.GetCtxValue[contant.PgCtxType](ctx, contant.CTX_POSTGRES_KEY, ctxDb)
+	dbObj := db.New(ctxDb)
 	return func(ctx context.Context, args SaveMsgToDbArgs, reply *SaveMsgToDbReply) error {
-		result, err := rethinkdb.Table(config.RethinkMsgDb).
-			Insert(args.Msgs).
-			RunWrite(rdb)
-		if err != nil {
-			r.logger.Error("SaveMsgToDb Err", fmt.Sprintf("result:%+v arg:%+v err:%v", result, args, err))
-		}
-		return err
+		dbObj.SaveMsgToDb(ctx, args.Msgs).Exec(func(i int, err error) {
+			if reply.Failed == nil {
+				reply.Failed = make([]string, 0)
+			}
+			reply.Failed = append(reply.Failed, args.Msgs[i].MsgID)
+			r.logger.Error("SaveMsgToDb Err", fmt.Sprintf("record:%d arg:%+v err:%v", i, args.Msgs[i], err))
+		})
+		return nil
 	}
 }
 
@@ -46,38 +46,34 @@ type GetMsgFromDbInRangeArgs struct {
 }
 
 type GetMsgFromDbInRangeReply struct {
-	Msg []model.Msg
+	Msg []db.Message
 }
 
 type getMsgFromDbInRangeFn func(context.Context, GetMsgFromDbInRangeArgs, *GetMsgFromDbInRangeReply) error
 
 func (r *rpcxServer) GetMsgFromDbInRange(ctx context.Context) getMsgFromDbInRangeFn {
-	var rdb contant.RethinkDbCtxType
-	rdb = helper.GetCtxValue[contant.RethinkDbCtxType](ctx, contant.CTX_RETHINK_DB_KEY, rdb)
+	ctxDb := ctx.Value(contant.CTX_POSTGRES_KEY).(contant.PgCtxType)
+	dbObj := db.New(ctxDb)
 	return func(ctx context.Context, args GetMsgFromDbInRangeArgs, reply *GetMsgFromDbInRangeReply) error {
-		var msgs []model.Msg
-		err := rethinkdb.Table(config.RethinkMsgDb).
-			Filter(
-				rethinkdb.Row.Field("conversation_id").Eq(args.ConvercationID).
-					Add(rethinkdb.Row.Field("msg_id").Ge(args.StartMsgId)).
-					And(rethinkdb.Row.Field("msg_id").Le(args.EndMsgId)),
-			).
-			GetAll(&msgs).
-			Exec(rdb)
+		msg, err := dbObj.GetMsgFromDbInRange(ctx, db.GetMsgFromDbInRangeParams{
+			ConvercationID: args.ConvercationID,
+			StartMsgID:     args.StartMsgId,
+			EndMsgID:       args.EndMsgId,
+		})
 		if err != nil {
 			r.logger.Error("GetMsgFromDbInRange GetMsgFromDbInRange Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
 			return err
 		}
 		if args.Sort == contant.Asc {
-			sort.Slice(msgs, func(i, j int) bool {
-				return msgs[i].MsgId < msgs[j].MsgId
+			sort.Slice(msg, func(i, j int) bool {
+				return msg[i].MsgID < msg[j].MsgID
 			})
 		} else {
-			sort.Slice(msgs, func(i, j int) bool {
-				return msgs[i].MsgId > msgs[j].MsgId
+			sort.Slice(msg, func(i, j int) bool {
+				return msg[i].MsgID > msg[j].MsgID
 			})
 		}
-		reply.Msg = msgs
+		reply.Msg = msg
 		return nil
 	}
 }
@@ -89,38 +85,30 @@ type GetLast30MsgFromDbArgs struct {
 }
 
 type GetLast30MsgFromDbReply struct {
-	Msg []model.Msg
+	Msg []db.Message
 }
 
 type getLast30MsgFromDbFn func(context.Context, GetLast30MsgFromDbArgs, *GetLast30MsgFromDbReply) error
 
 func (r *rpcxServer) GetLast30MsgFromDb(ctx context.Context) getLast30MsgFromDbFn {
-	var rdb contant.RethinkDbCtxType
-	rdb = helper.GetCtxValue[contant.RethinkDbCtxType](ctx, contant.CTX_RETHINK_DB_KEY, rdb)
+	ctxDb := ctx.Value(contant.CTX_POSTGRES_KEY).(contant.PgCtxType)
+	dbObj := db.New(ctxDb)
 	return func(ctx context.Context, args GetLast30MsgFromDbArgs, reply *GetLast30MsgFromDbReply) error {
-		var msgs []model.Msg
-		err := rethinkdb.Table(config.RethinkMsgDb).
-			Filter(
-				rethinkdb.Row.Field("conversation_id").Eq(args.ConvercationID),
-			).
-			OrderBy(rethinkdb.Desc(rethinkdb.Row.Field("msg_id"))).
-			Limit(30).
-			GetAll(&msgs).
-			Exec(rdb)
+		msg, err := dbObj.GetLast30MsgFromDb(ctx, args.ConvercationID)
 		if err != nil {
 			r.logger.Error("GetLast30MsgFromDb GetLast30MsgFromDb Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
 			return err
 		}
 		if args.Sort == contant.Asc {
-			sort.Slice(msgs, func(i, j int) bool {
-				return msgs[i].MsgId < msgs[j].MsgId
+			sort.Slice(msg, func(i, j int) bool {
+				return msg[i].MsgID < msg[j].MsgID
 			})
 		} else {
-			sort.Slice(msgs, func(i, j int) bool {
-				return msgs[i].MsgId > msgs[j].MsgId
+			sort.Slice(msg, func(i, j int) bool {
+				return msg[i].MsgID > msg[j].MsgID
 			})
 		}
-		reply.Msg = msgs
+		reply.Msg = msg
 		return nil
 	}
 }
@@ -133,39 +121,33 @@ type GetThe30MsgBeforeTheIdArgs struct {
 }
 
 type GetThe30MsgBeforeTheIdReply struct {
-	Msg []model.Msg
+	Msg []db.Message
 }
 
 type getThe30MsgBeforeTheIdFn func(context.Context, GetThe30MsgBeforeTheIdArgs, *GetThe30MsgBeforeTheIdReply) error
 
 func (r *rpcxServer) GetThe30MsgBeforeTheId(ctx context.Context) getThe30MsgBeforeTheIdFn {
-	var rdb contant.RethinkDbCtxType
-	rdb = helper.GetCtxValue[contant.RethinkDbCtxType](ctx, contant.CTX_RETHINK_DB_KEY, rdb)
+	ctxDb := ctx.Value(contant.CTX_POSTGRES_KEY).(contant.PgCtxType)
+	dbObj := db.New(ctxDb)
 	return func(ctx context.Context, args GetThe30MsgBeforeTheIdArgs, reply *GetThe30MsgBeforeTheIdReply) error {
-		var msgs []model.Msg
-		err := rethinkdb.Table(config.RethinkMsgDb).
-			Filter(
-				rethinkdb.Row.Field("conversation_id").Eq(args.ConvercationID).
-					And(rethinkdb.Row.Field("msg_id").Le(args.MsgId)),
-			).
-			OrderBy(rethinkdb.Desc(rethinkdb.Row.Field("msg_id"))).
-			Limit(30).
-			GetAll(&msgs).
-			Exec(rdb)
+		msg, err := dbObj.GetThe30MsgBeforeTheId(ctx, db.GetThe30MsgBeforeTheIdParams{
+			ConvercationID: args.ConvercationID,
+			MsgID:          args.MsgId,
+		})
 		if err != nil {
 			r.logger.Error("GetThe30MsgBeforeTheId GetThe30MsgBeforeTheId Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
 			return err
 		}
 		if args.Sort == contant.Asc {
-			sort.Slice(msgs, func(i, j int) bool {
-				return msgs[i].MsgId < msgs[j].MsgId
+			sort.Slice(msg, func(i, j int) bool {
+				return msg[i].MsgID < msg[j].MsgID
 			})
 		} else {
-			sort.Slice(msgs, func(i, j int) bool {
-				return msgs[i].MsgId > msgs[j].MsgId
+			sort.Slice(msg, func(i, j int) bool {
+				return msg[i].MsgID > msg[j].MsgID
 			})
 		}
-		reply.Msg = msgs
+		reply.Msg = msg
 		return nil
 	}
 }
@@ -178,39 +160,33 @@ type GetThe30MsgAfterTheIdArgs struct {
 }
 
 type GetThe30MsgAfterTheIdReply struct {
-	Msg []model.Msg
+	Msg []db.Message
 }
 
 type getThe30MsgAfterTheIdFn func(context.Context, GetThe30MsgAfterTheIdArgs, *GetThe30MsgAfterTheIdReply) error
 
 func (r *rpcxServer) GetThe30MsgAfterTheId(ctx context.Context) getThe30MsgAfterTheIdFn {
-	var rdb contant.RethinkDbCtxType
-	rdb = helper.GetCtxValue[contant.RethinkDbCtxType](ctx, contant.CTX_RETHINK_DB_KEY, rdb)
+	ctxDb := ctx.Value(contant.CTX_POSTGRES_KEY).(contant.PgCtxType)
+	dbObj := db.New(ctxDb)
 	return func(ctx context.Context, args GetThe30MsgAfterTheIdArgs, reply *GetThe30MsgAfterTheIdReply) error {
-		var msgs []model.Msg
-		err := rethinkdb.Table(config.RethinkMsgDb).
-			Filter(
-				rethinkdb.Row.Field("conversation_id").Eq(args.ConvercationID).
-					And(rethinkdb.Row.Field("msg_id").Ge(args.MsgId)),
-			).
-			OrderBy(rethinkdb.Asc(rethinkdb.Row.Field("msg_id"))).
-			Limit(30).
-			GetAll(&msgs).
-			Exec(rdb)
+		msg, err := dbObj.GetThe30MsgBeforeTheId(ctx, db.GetThe30MsgBeforeTheIdParams{
+			ConvercationID: args.ConvercationID,
+			MsgID:          args.MsgId,
+		})
 		if err != nil {
 			r.logger.Error("GetThe30MsgAfterTheId GetThe30MsgBeforeTheId Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
 			return err
 		}
 		if args.Sort == contant.Asc {
-			sort.Slice(msgs, func(i, j int) bool {
-				return msgs[i].MsgId < msgs[j].MsgId
+			sort.Slice(msg, func(i, j int) bool {
+				return msg[i].MsgID < msg[j].MsgID
 			})
 		} else {
-			sort.Slice(msgs, func(i, j int) bool {
-				return msgs[i].MsgId > msgs[j].MsgId
+			sort.Slice(msg, func(i, j int) bool {
+				return msg[i].MsgID > msg[j].MsgID
 			})
 		}
-		reply.Msg = msgs
+		reply.Msg = msg
 		return nil
 	}
 }

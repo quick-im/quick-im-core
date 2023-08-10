@@ -1,5 +1,15 @@
 package model
 
+import (
+	"time"
+)
+
 type Msg struct {
-	MsgId string `rethinkdb:"msg_id" imdb:"pk"`
+	MsgId          string    `rethinkdb:"msg_id" imdb:"pk"`
+	ConvercationID string    `rethinkdb:"convercation_id" imdb:"index"`
+	FromSession    int32     `rethinkdb:"from_session" imdb:"index"`
+	SendTime       time.Time `rethinkdb:"send_time" imdb:"index"`
+	Status         int32     `rethinkdb:"status"`
+	Type           int32     `rethinkdb:"type"`
+	Content        string    `rethinkdb:"content"`
 }
