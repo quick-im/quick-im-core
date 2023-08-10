@@ -39,7 +39,7 @@ func (r *rpcxServer) SaveMsgToDb(ctx context.Context) saveMsgToDbFn {
 
 // 根据范围会获取消息消息
 type GetMsgFromDbInRangeArgs struct {
-	ConvercationID string
+	ConversationID string
 	StartMsgId     string
 	EndMsgId       string
 	Sort           contant.Sort
@@ -56,7 +56,7 @@ func (r *rpcxServer) GetMsgFromDbInRange(ctx context.Context) getMsgFromDbInRang
 	dbObj := db.New(ctxDb)
 	return func(ctx context.Context, args GetMsgFromDbInRangeArgs, reply *GetMsgFromDbInRangeReply) error {
 		msg, err := dbObj.GetMsgFromDbInRange(ctx, db.GetMsgFromDbInRangeParams{
-			ConvercationID: args.ConvercationID,
+			ConversationID: args.ConversationID,
 			StartMsgID:     args.StartMsgId,
 			EndMsgID:       args.EndMsgId,
 		})
@@ -80,7 +80,7 @@ func (r *rpcxServer) GetMsgFromDbInRange(ctx context.Context) getMsgFromDbInRang
 
 // 获取会话最后30条消息
 type GetLast30MsgFromDbArgs struct {
-	ConvercationID string
+	ConversationID string
 	Sort           contant.Sort
 }
 
@@ -94,7 +94,7 @@ func (r *rpcxServer) GetLast30MsgFromDb(ctx context.Context) getLast30MsgFromDbF
 	ctxDb := ctx.Value(contant.CTX_POSTGRES_KEY).(contant.PgCtxType)
 	dbObj := db.New(ctxDb)
 	return func(ctx context.Context, args GetLast30MsgFromDbArgs, reply *GetLast30MsgFromDbReply) error {
-		msg, err := dbObj.GetLast30MsgFromDb(ctx, args.ConvercationID)
+		msg, err := dbObj.GetLast30MsgFromDb(ctx, args.ConversationID)
 		if err != nil {
 			r.logger.Error("GetLast30MsgFromDb GetLast30MsgFromDb Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
 			return err
@@ -115,7 +115,7 @@ func (r *rpcxServer) GetLast30MsgFromDb(ctx context.Context) getLast30MsgFromDbF
 
 // 获取指定消息id之前30条消息
 type GetThe30MsgBeforeTheIdArgs struct {
-	ConvercationID string
+	ConversationID string
 	MsgId          string
 	Sort           contant.Sort
 }
@@ -131,7 +131,7 @@ func (r *rpcxServer) GetThe30MsgBeforeTheId(ctx context.Context) getThe30MsgBefo
 	dbObj := db.New(ctxDb)
 	return func(ctx context.Context, args GetThe30MsgBeforeTheIdArgs, reply *GetThe30MsgBeforeTheIdReply) error {
 		msg, err := dbObj.GetThe30MsgBeforeTheId(ctx, db.GetThe30MsgBeforeTheIdParams{
-			ConvercationID: args.ConvercationID,
+			conversationID: args.ConversationID,
 			MsgID:          args.MsgId,
 		})
 		if err != nil {
@@ -154,7 +154,7 @@ func (r *rpcxServer) GetThe30MsgBeforeTheId(ctx context.Context) getThe30MsgBefo
 
 // 获取指定消息id之后30条消息
 type GetThe30MsgAfterTheIdArgs struct {
-	ConvercationID string
+	ConversationID string
 	MsgId          string
 	Sort           contant.Sort
 }
@@ -170,7 +170,7 @@ func (r *rpcxServer) GetThe30MsgAfterTheId(ctx context.Context) getThe30MsgAfter
 	dbObj := db.New(ctxDb)
 	return func(ctx context.Context, args GetThe30MsgAfterTheIdArgs, reply *GetThe30MsgAfterTheIdReply) error {
 		msg, err := dbObj.GetThe30MsgBeforeTheId(ctx, db.GetThe30MsgBeforeTheIdParams{
-			ConvercationID: args.ConvercationID,
+			ConversationID: args.ConversationID,
 			MsgID:          args.MsgId,
 		})
 		if err != nil {

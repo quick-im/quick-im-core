@@ -9,13 +9,13 @@ import (
 	"context"
 )
 
-// iteratorForSessionJoinsConvercationUseCopyFrom implements pgx.CopyFromSource.
-type iteratorForSessionJoinsConvercationUseCopyFrom struct {
-	rows                 []SessionJoinsConvercationUseCopyFromParams
+// iteratorForSessionJoinsConversationUseCopyFrom implements pgx.CopyFromSource.
+type iteratorForSessionJoinsConversationUseCopyFrom struct {
+	rows                 []SessionJoinsConversationUseCopyFromParams
 	skippedFirstNextCall bool
 }
 
-func (r *iteratorForSessionJoinsConvercationUseCopyFrom) Next() bool {
+func (r *iteratorForSessionJoinsConversationUseCopyFrom) Next() bool {
 	if len(r.rows) == 0 {
 		return false
 	}
@@ -27,17 +27,17 @@ func (r *iteratorForSessionJoinsConvercationUseCopyFrom) Next() bool {
 	return len(r.rows) > 0
 }
 
-func (r iteratorForSessionJoinsConvercationUseCopyFrom) Values() ([]interface{}, error) {
+func (r iteratorForSessionJoinsConversationUseCopyFrom) Values() ([]interface{}, error) {
 	return []interface{}{
 		r.rows[0].SessionID,
-		r.rows[0].ConvercationID,
+		r.rows[0].ConversationID,
 	}, nil
 }
 
-func (r iteratorForSessionJoinsConvercationUseCopyFrom) Err() error {
+func (r iteratorForSessionJoinsConversationUseCopyFrom) Err() error {
 	return nil
 }
 
-func (q *Queries) SessionJoinsConvercationUseCopyFrom(ctx context.Context, arg []SessionJoinsConvercationUseCopyFromParams) (int64, error) {
-	return q.db.CopyFrom(ctx, []string{"public", "conversation_session_id"}, []string{"session_id", "convercation_id"}, &iteratorForSessionJoinsConvercationUseCopyFrom{rows: arg})
+func (q *Queries) SessionJoinsConversationUseCopyFrom(ctx context.Context, arg []SessionJoinsConversationUseCopyFromParams) (int64, error) {
+	return q.db.CopyFrom(ctx, []string{"public", "conversation_session_id"}, []string{"session_id", "conversation_id"}, &iteratorForSessionJoinsConversationUseCopyFrom{rows: arg})
 }

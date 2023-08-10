@@ -25,12 +25,12 @@ type ConversationSessionID struct {
 	SessionID      string
 	LastRecvMsgID  *string
 	IsKickOut      bool
-	ConvercationID string
+	ConversationID string
 }
 
 type Message struct {
 	MsgID          string
-	ConvercationID string
+	ConversationID string
 	FromSession    int32
 	SendTime       pgtype.Timestamp
 	Status         int32

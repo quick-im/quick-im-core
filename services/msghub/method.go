@@ -10,7 +10,7 @@ import (
 
 type SendMsgArgs struct {
 	FromSession    string
-	ConvercationId string
+	ConversationID string
 	MsgType        int32
 	Content        []byte
 	SendTime       time.Time

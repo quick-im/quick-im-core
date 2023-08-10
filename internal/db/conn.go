@@ -86,11 +86,12 @@ func (p *postgresClientOpt) GetDb() *pgxpool.Pool {
 	// postgres://user:password@127.0.0.1:5432/?Timezone=Asia%2FShanghai
 	conn, err := pgxpool.New(context.Background(),
 		fmt.Sprintf(
-			"postgres://%s:%s@%s:%d/?sslmode=disable&pool_min_conns=%d&pool_max_conns=%d",
+			"postgres://%s:%s@%s:%d/%s?sslmode=disable&pool_min_conns=%d&pool_max_conns=%d",
 			p.username,
 			p.password,
 			p.host,
 			p.port,
+			p.dbName,
 			p.minConns,
 			p.maxConns,
 		),

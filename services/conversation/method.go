@@ -17,43 +17,43 @@ const (
 	conversationTypeMax = 0xF
 )
 
-type CreateConvercationArgs struct {
+type CreateConversationArgs struct {
 	ConversationType uint8
 	SessionList      []string
 }
 
-type CreateConvercationReply struct {
+type CreateConversationReply struct {
 	ConversationID string
 }
 
-type createConvercationFn func(ctx context.Context, args CreateConvercationArgs, reply *CreateConvercationReply) error
+type createConversationFn func(ctx context.Context, args CreateConversationArgs, reply *CreateConversationReply) error
 
-func (s *rpcxServer) CreateConvercation(ctx context.Context) createConvercationFn {
+func (s *rpcxServer) CreateConversation(ctx context.Context) createConversationFn {
 	ctxDb := ctx.Value(contant.CTX_POSTGRES_KEY).(contant.PgCtxType)
 	dbObj := db.New(ctxDb)
-	return func(ctx context.Context, args CreateConvercationArgs, reply *CreateConvercationReply) error {
+	return func(ctx context.Context, args CreateConversationArgs, reply *CreateConversationReply) error {
 		if args.ConversationType > conversationTypeMax {
-			s.logger.Error("CreateConvercation ConversationType Err", "CreateConvercationArgsType:", fmt.Sprintf("%d", args.ConversationType))
+			s.logger.Error("CreateConversation ConversationType Err", "CreateConversationArgsType:", fmt.Sprintf("%d", args.ConversationType))
 			return quickim_errors.ErrConversationTypeRange
 		}
 		if len(args.SessionList) < 1 {
-			s.logger.Error("CreateConvercation ConversationNumberRange Err", "args:", fmt.Sprintf("%+v", args))
+			s.logger.Error("CreateConversation ConversationNumberRange Err", "args:", fmt.Sprintf("%+v", args))
 			return quickim_errors.ErrConversationNumberRange
 		}
 		reply.ConversationID = uuid.New().String()
-		if err := dbObj.CreateConvercation(ctx, reply.ConversationID); err != nil {
-			s.logger.Error("CreateConvercation To Db Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+		if err := dbObj.CreateConversation(ctx, reply.ConversationID); err != nil {
+			s.logger.Error("CreateConversation To Db Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
-		sessions := make([]db.SessionJoinsConvercationUseCopyFromParams, len(args.SessionList))
+		sessions := make([]db.SessionJoinsConversationUseCopyFromParams, len(args.SessionList))
 		for i := range args.SessionList {
-			sessions[i] = db.SessionJoinsConvercationUseCopyFromParams{
+			sessions[i] = db.SessionJoinsConversationUseCopyFromParams{
 				SessionID:      args.SessionList[i],
-				ConvercationID: reply.ConversationID,
+				ConversationID: reply.ConversationID,
 			}
 		}
-		if _, err := dbObj.SessionJoinsConvercationUseCopyFrom(ctx, sessions); err != nil {
-			s.logger.Error("CreateConvercation SessionJoinsConvercationUseCopyFrom Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+		if _, err := dbObj.SessionJoinsConversationUseCopyFrom(ctx, sessions); err != nil {
+			s.logger.Error("CreateConversation SessionJoinsConversationUseCopyFrom Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
 		return nil
@@ -61,27 +61,27 @@ func (s *rpcxServer) CreateConvercation(ctx context.Context) createConvercationF
 }
 
 // 加入会话
-type JoinConvercationArgs = CreateConvercationArgs
-type JoinConvercationReply = CreateConvercationReply
-type JoinConvercationFn createConvercationFn
+type JoinConversationArgs = CreateConversationArgs
+type JoinConversationReply = CreateConversationReply
+type JoinConversationFn createConversationFn
 
-func (s *rpcxServer) JoinConvercation(ctx context.Context) JoinConvercationFn {
+func (s *rpcxServer) JoinConversation(ctx context.Context) JoinConversationFn {
 	ctxDb := ctx.Value(contant.CTX_POSTGRES_KEY).(contant.PgCtxType)
 	dbObj := db.New(ctxDb)
-	return func(ctx context.Context, args JoinConvercationArgs, reply *JoinConvercationReply) error {
+	return func(ctx context.Context, args JoinConversationArgs, reply *JoinConversationReply) error {
 		if len(args.SessionList) < 1 {
-			s.logger.Error("JoinConvercation ConversationNumberRange Err", "args:", fmt.Sprintf("%+v", args))
+			s.logger.Error("JoinConversation ConversationNumberRange Err", "args:", fmt.Sprintf("%+v", args))
 			return quickim_errors.ErrConversationNumberRange
 		}
-		sessions := make([]db.SessionJoinsConvercationUseCopyFromParams, len(args.SessionList))
+		sessions := make([]db.SessionJoinsConversationUseCopyFromParams, len(args.SessionList))
 		for i := range args.SessionList {
-			sessions[i] = db.SessionJoinsConvercationUseCopyFromParams{
+			sessions[i] = db.SessionJoinsConversationUseCopyFromParams{
 				SessionID:      args.SessionList[i],
-				ConvercationID: reply.ConversationID,
+				ConversationID: reply.ConversationID,
 			}
 		}
-		if _, err := dbObj.SessionJoinsConvercationUseCopyFrom(ctx, sessions); err != nil {
-			s.logger.Error("JoinConvercation SessionJoinsConvercationUseCopyFrom Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+		if _, err := dbObj.SessionJoinsConversationUseCopyFrom(ctx, sessions); err != nil {
+			s.logger.Error("JoinConversation SessionJoinsConversationUseCopyFrom Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
 		return nil
@@ -110,7 +110,7 @@ func (r *rpcxServer) GetJoinedConversations(ctx context.Context) getJoinedConver
 		}
 		reply.Conversations = make([]string, len(list))
 		for i := range list {
-			reply.Conversations[i] = list[i].ConvercationID
+			reply.Conversations[i] = list[i].ConversationID
 		}
 		return nil
 	}
@@ -135,7 +135,7 @@ func (r *rpcxServer) CheckJoinedConversation(ctx context.Context) checkJoinedCon
 		reply.Joined = false
 		n, err := dbObj.CheckJoinedonversation(ctx, db.CheckJoinedonversationParams{
 			SessionID:      args.SessionId,
-			ConvercationID: args.ConversationId,
+			ConversationID: args.ConversationId,
 		})
 		if err != nil {
 			r.logger.Error("CheckJoinedConversation CheckJoinedonversation Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
@@ -167,7 +167,7 @@ func (r *rpcxServer) KickoutForConversation(ctx context.Context) kickoutJoinedCo
 		params := make([]db.KickoutForConversationParams, len(args.SessionId))
 		for i := range args.SessionId {
 			params[i].SessionID = args.SessionId[i]
-			params[i].ConvercationID = args.ConversationId
+			params[i].ConversationID = args.ConversationId
 		}
 		dbObj.KickoutForConversation(ctx, params).Exec(func(i int, err error) {
 			if err != nil {

@@ -39,7 +39,7 @@ func (r *rpcxServer) SaveMsgToDb(ctx context.Context) saveMsgToDbFn {
 
 // 根据范围会获取消息消息
 type GetMsgFromDbInRangeArgs struct {
-	ConvercationID string
+	ConversationID string
 	StartMsgId     string
 	EndMsgId       string
 	Sort           contant.Sort
@@ -56,16 +56,20 @@ func (r *rpcxServer) GetMsgFromDbInRange(ctx context.Context) getMsgFromDbInRang
 	rdb = helper.GetCtxValue[contant.RethinkDbCtxType](ctx, contant.CTX_RETHINK_DB_KEY, rdb)
 	return func(ctx context.Context, args GetMsgFromDbInRangeArgs, reply *GetMsgFromDbInRangeReply) error {
 		var msgs []model.Msg
-		err := rethinkdb.Table(config.RethinkMsgDb).
+		rows, err := rethinkdb.Table(config.RethinkMsgDb).
 			Filter(
-				rethinkdb.Row.Field("conversation_id").Eq(args.ConvercationID).
-					Add(rethinkdb.Row.Field("msg_id").Ge(args.StartMsgId)).
+				rethinkdb.Row.Field("conversation_id").Eq(args.ConversationID).
+					And(rethinkdb.Row.Field("msg_id").Ge(args.StartMsgId)).
 					And(rethinkdb.Row.Field("msg_id").Le(args.EndMsgId)),
 			).
-			GetAll(&msgs).
-			Exec(rdb)
+			Run(rdb)
 		if err != nil {
 			r.logger.Error("GetMsgFromDbInRange GetMsgFromDbInRange Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
+			return err
+		}
+		defer rows.Close()
+		if err := rows.All(&msgs); err != nil {
+			r.logger.Error("GetMsgFromDbInRange Bind To Struct Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
 			return err
 		}
 		if args.Sort == contant.Asc {
@@ -84,7 +88,7 @@ func (r *rpcxServer) GetMsgFromDbInRange(ctx context.Context) getMsgFromDbInRang
 
 // 获取会话最后30条消息
 type GetLast30MsgFromDbArgs struct {
-	ConvercationID string
+	ConversationID string
 	Sort           contant.Sort
 }
 
@@ -99,16 +103,20 @@ func (r *rpcxServer) GetLast30MsgFromDb(ctx context.Context) getLast30MsgFromDbF
 	rdb = helper.GetCtxValue[contant.RethinkDbCtxType](ctx, contant.CTX_RETHINK_DB_KEY, rdb)
 	return func(ctx context.Context, args GetLast30MsgFromDbArgs, reply *GetLast30MsgFromDbReply) error {
 		var msgs []model.Msg
-		err := rethinkdb.Table(config.RethinkMsgDb).
+		rows, err := rethinkdb.Table(config.RethinkMsgDb).
 			Filter(
-				rethinkdb.Row.Field("conversation_id").Eq(args.ConvercationID),
+				rethinkdb.Row.Field("conversation_id").Eq(args.ConversationID),
 			).
 			OrderBy(rethinkdb.Desc(rethinkdb.Row.Field("msg_id"))).
 			Limit(30).
-			GetAll(&msgs).
-			Exec(rdb)
+			Run(rdb)
 		if err != nil {
 			r.logger.Error("GetLast30MsgFromDb GetLast30MsgFromDb Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
+			return err
+		}
+		defer rows.Close()
+		if err := rows.All(&msgs); err != nil {
+			r.logger.Error("GetLast30MsgFromDb Bind To Struct Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
 			return err
 		}
 		if args.Sort == contant.Asc {
@@ -127,7 +135,7 @@ func (r *rpcxServer) GetLast30MsgFromDb(ctx context.Context) getLast30MsgFromDbF
 
 // 获取指定消息id之前30条消息
 type GetThe30MsgBeforeTheIdArgs struct {
-	ConvercationID string
+	ConversationID string
 	MsgId          string
 	Sort           contant.Sort
 }
@@ -143,17 +151,21 @@ func (r *rpcxServer) GetThe30MsgBeforeTheId(ctx context.Context) getThe30MsgBefo
 	rdb = helper.GetCtxValue[contant.RethinkDbCtxType](ctx, contant.CTX_RETHINK_DB_KEY, rdb)
 	return func(ctx context.Context, args GetThe30MsgBeforeTheIdArgs, reply *GetThe30MsgBeforeTheIdReply) error {
 		var msgs []model.Msg
-		err := rethinkdb.Table(config.RethinkMsgDb).
+		rows, err := rethinkdb.Table(config.RethinkMsgDb).
 			Filter(
-				rethinkdb.Row.Field("conversation_id").Eq(args.ConvercationID).
+				rethinkdb.Row.Field("conversation_id").Eq(args.ConversationID).
 					And(rethinkdb.Row.Field("msg_id").Le(args.MsgId)),
 			).
 			OrderBy(rethinkdb.Desc(rethinkdb.Row.Field("msg_id"))).
 			Limit(30).
-			GetAll(&msgs).
-			Exec(rdb)
+			Run(rdb)
 		if err != nil {
 			r.logger.Error("GetThe30MsgBeforeTheId GetThe30MsgBeforeTheId Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
+			return err
+		}
+		defer rows.Close()
+		if err := rows.All(&msgs); err != nil {
+			r.logger.Error("GetThe30MsgBeforeTheId Bind To Struct Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
 			return err
 		}
 		if args.Sort == contant.Asc {
@@ -172,7 +184,7 @@ func (r *rpcxServer) GetThe30MsgBeforeTheId(ctx context.Context) getThe30MsgBefo
 
 // 获取指定消息id之后30条消息
 type GetThe30MsgAfterTheIdArgs struct {
-	ConvercationID string
+	ConversationID string
 	MsgId          string
 	Sort           contant.Sort
 }
@@ -188,17 +200,21 @@ func (r *rpcxServer) GetThe30MsgAfterTheId(ctx context.Context) getThe30MsgAfter
 	rdb = helper.GetCtxValue[contant.RethinkDbCtxType](ctx, contant.CTX_RETHINK_DB_KEY, rdb)
 	return func(ctx context.Context, args GetThe30MsgAfterTheIdArgs, reply *GetThe30MsgAfterTheIdReply) error {
 		var msgs []model.Msg
-		err := rethinkdb.Table(config.RethinkMsgDb).
+		rows, err := rethinkdb.Table(config.RethinkMsgDb).
 			Filter(
-				rethinkdb.Row.Field("conversation_id").Eq(args.ConvercationID).
+				rethinkdb.Row.Field("conversation_id").Eq(args.ConversationID).
 					And(rethinkdb.Row.Field("msg_id").Ge(args.MsgId)),
 			).
 			OrderBy(rethinkdb.Asc(rethinkdb.Row.Field("msg_id"))).
 			Limit(30).
-			GetAll(&msgs).
-			Exec(rdb)
+			Run(rdb)
 		if err != nil {
 			r.logger.Error("GetThe30MsgAfterTheId GetThe30MsgBeforeTheId Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
+			return err
+		}
+		defer rows.Close()
+		if err := rows.All(&msgs); err != nil {
+			r.logger.Error("GetThe30MsgAfterTheId Bind To Struct Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
 			return err
 		}
 		if args.Sort == contant.Asc {

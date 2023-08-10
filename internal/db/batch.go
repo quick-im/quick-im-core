@@ -110,7 +110,7 @@ func (b *DeleteConversationsBatchResults) Close() error {
 const kickoutForConversation = `-- name: KickoutForConversation :batchexec
 UPDATE public.conversation_session_id
 SET is_kick_out=true
-WHERE session_id = $1 AND convercation_id=$2
+WHERE session_id = $1 AND conversation_id=$2
 `
 
 type KickoutForConversationBatchResults struct {
@@ -121,7 +121,7 @@ type KickoutForConversationBatchResults struct {
 
 type KickoutForConversationParams struct {
 	SessionID      string
-	ConvercationID string
+	ConversationID string
 }
 
 func (q *Queries) KickoutForConversation(ctx context.Context, arg []KickoutForConversationParams) *KickoutForConversationBatchResults {
@@ -129,7 +129,7 @@ func (q *Queries) KickoutForConversation(ctx context.Context, arg []KickoutForCo
 	for _, a := range arg {
 		vals := []interface{}{
 			a.SessionID,
-			a.ConvercationID,
+			a.ConversationID,
 		}
 		batch.Queue(kickoutForConversation, vals...)
 	}
@@ -160,7 +160,7 @@ func (b *KickoutForConversationBatchResults) Close() error {
 
 const saveMsgToDb = `-- name: SaveMsgToDb :batchexec
 INSERT INTO public.messages
-(msg_id, convercation_id, from_session, send_time, status, "type", "content")
+(msg_id, conversation_id, from_session, send_time, status, "type", "content")
 VALUES($1, $2, $3, $4, $5, $6, $7)
 `
 
@@ -172,7 +172,7 @@ type SaveMsgToDbBatchResults struct {
 
 type SaveMsgToDbParams struct {
 	MsgID          string
-	ConvercationID string
+	ConversationID string
 	FromSession    int32
 	SendTime       pgtype.Timestamp
 	Status         int32
@@ -185,7 +185,7 @@ func (q *Queries) SaveMsgToDb(ctx context.Context, arg []SaveMsgToDbParams) *Sav
 	for _, a := range arg {
 		vals := []interface{}{
 			a.MsgID,
-			a.ConvercationID,
+			a.ConversationID,
 			a.FromSession,
 			a.SendTime,
 			a.Status,

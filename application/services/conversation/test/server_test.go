@@ -15,11 +15,11 @@ func TestServer(t *testing.T) {
 	}
 	xclient := client.NewXClient(conversation.SERVER_NAME, client.Failtry, client.RandomSelect, d, client.DefaultOption)
 	defer xclient.Close()
-	args := conversation.CreateConvercationArgs{
+	args := conversation.CreateConversationArgs{
 		ConversationType: 0,
 		SessionList:      []string{"123456"},
 	}
-	reply := &conversation.CreateConvercationReply{}
+	reply := &conversation.CreateConversationReply{}
 	if err := xclient.Call(context.Background(), conversation.SERVICE_CREATE_CONVERSATION, args, reply); err != nil {
 		t.Error(err)
 	}
