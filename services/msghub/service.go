@@ -13,6 +13,7 @@ import (
 	"github.com/quick-im/quick-im-core/internal/messaging"
 	"github.com/quick-im/quick-im-core/internal/rpcx"
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
+	"github.com/quick-im/quick-im-core/services/msgbroker"
 	"github.com/quick-im/quick-im-core/services/persistence"
 	cserver "github.com/rpcxio/rpcx-consul/serverplugin"
 	"github.com/smallnest/rpcx/server"
@@ -67,6 +68,9 @@ func (s *rpcxServer) Start(ctx context.Context) error {
 	persistence := s.InitDepServices(persistence.SERVER_NAME)
 	ctx = context.WithValue(ctx, contant.CTX_SERVICE_PERSISTENCE, persistence)
 	defer persistence.CloseAndShutdownTrace()
+	msgbroker := s.InitDepServices(msgbroker.SERVER_NAME)
+	ctx = context.WithValue(ctx, contant.CTX_SERVICE_MSGBORKER, msgbroker)
+	defer msgbroker.CloseAndShutdownTrace()
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_SEND_MSG, s.SendMsg(ctx), "")
 	return ser.Serve("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
 }
@@ -117,7 +121,7 @@ func (r *rpcxServer) InitDepServices(serviceName string) *rpcx.RpcxClientWithOpt
 		rpcx.WithJeagerAgentHostPort(r.trackAgentHostPort),
 	)
 	if err != nil {
-		r.logger.Fatal("init dep %s err", serviceName, fmt.Sprintf("%v", err))
+		r.logger.Fatal("init dep err", fmt.Sprintf("serviceName: %s , Err: %v", serviceName, err))
 	}
 	return service
 }

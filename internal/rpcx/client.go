@@ -8,6 +8,7 @@ import (
 	"github.com/quick-im/quick-im-core/internal/quickim_errors"
 	"github.com/quick-im/quick-im-core/internal/tracing"
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
+	cclient "github.com/rpcxio/rpcx-consul/client"
 	"github.com/smallnest/rpcx/client"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/trace"
@@ -78,11 +79,20 @@ func NewClient(opts ...rpcxOption) (*RpcxClientWithOpt, error) {
 	for i := range opts {
 		opts[i](c)
 	}
-	d, err := client.NewPeer2PeerDiscovery(c.serverAddress, "")
-	if err != nil {
-		return nil, err
+	var cliDiscovery client.ServiceDiscovery
+	var err error
+	if len(c.consulServers) != 0 {
+		cliDiscovery, err = cclient.NewConsulDiscovery(c.serviceName, c.serviceName, c.consulServers, nil)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		cliDiscovery, err = client.NewPeer2PeerDiscovery(c.serverAddress, "")
+		if err != nil {
+			return nil, err
+		}
 	}
-	xclient := client.NewXClient(c.serviceName, client.Failtry, client.RandomSelect, d, client.DefaultOption)
+	xclient := client.NewXClient(c.serviceName, client.Failtry, client.RandomSelect, cliDiscovery, client.DefaultOption)
 	if c.openTracing {
 		tracer, ctx := c.addTrace(xclient)
 		c.tracePtr = tracer
