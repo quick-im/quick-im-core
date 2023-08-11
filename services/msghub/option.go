@@ -1,8 +1,7 @@
 package msghub
 
 import (
-	"github.com/quick-im/quick-im-core/internal/logger/innerzap"
-	"go.uber.org/zap/zapcore"
+	"github.com/quick-im/quick-im-core/internal/logger"
 )
 
 type Option func(*rpcxServer)
@@ -79,14 +78,8 @@ func WithNatsDisableJetstream() Option {
 	}
 }
 
-func WithLogger(serviceName, logPath string, logLevel zapcore.Level) Option {
+func WithLogger(logger logger.Logger) Option {
 	return func(rs *rpcxServer) {
-		rs.logger = innerzap.NewZapLoggerAdapter(
-			innerzap.NewLoggerWithOpt(
-				innerzap.WithLogLevel(logLevel),
-				innerzap.WithLogPath(logPath),
-				innerzap.WithServiceName(serviceName),
-			).NewLogger(),
-		)
+		rs.logger = logger
 	}
 }

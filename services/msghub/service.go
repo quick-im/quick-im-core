@@ -55,6 +55,7 @@ func NewServer(opts ...Option) *rpcxServer {
 }
 
 func (s *rpcxServer) Start(ctx context.Context) error {
+	s.logger.Info("start")
 	ser := server.NewServer()
 	// 在服务端添加 Jaeger 拦截器
 	if s.openTracing {
