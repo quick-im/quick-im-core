@@ -9,7 +9,7 @@ import (
 
 	"github.com/quick-im/quick-im-core/internal/contant"
 	"github.com/quick-im/quick-im-core/internal/db"
-	"github.com/quick-im/quick-im-core/internal/quickim_errors"
+	"github.com/quick-im/quick-im-core/internal/quickerr"
 )
 
 // 创建会话
@@ -34,11 +34,11 @@ func (s *rpcxServer) CreateConversation(ctx context.Context) createConversationF
 	return func(ctx context.Context, args CreateConversationArgs, reply *CreateConversationReply) error {
 		if args.ConversationType > conversationTypeMax {
 			s.logger.Error("CreateConversation ConversationType Err", "CreateConversationArgsType:", fmt.Sprintf("%d", args.ConversationType))
-			return quickim_errors.ErrConversationTypeRange
+			return quickerr.ErrConversationTypeRange
 		}
 		if len(args.SessionList) < 1 {
 			s.logger.Error("CreateConversation ConversationNumberRange Err", "args:", fmt.Sprintf("%+v", args))
-			return quickim_errors.ErrConversationNumberRange
+			return quickerr.ErrConversationNumberRange
 		}
 		reply.ConversationID = uuid.New().String()
 		if err := dbObj.CreateConversation(ctx, reply.ConversationID); err != nil {
@@ -71,7 +71,7 @@ func (s *rpcxServer) JoinConversation(ctx context.Context) JoinConversationFn {
 	return func(ctx context.Context, args JoinConversationArgs, reply *JoinConversationReply) error {
 		if len(args.SessionList) < 1 {
 			s.logger.Error("JoinConversation ConversationNumberRange Err", "args:", fmt.Sprintf("%+v", args))
-			return quickim_errors.ErrConversationNumberRange
+			return quickerr.ErrConversationNumberRange
 		}
 		sessions := make([]db.SessionJoinsConversationUseCopyFromParams, len(args.SessionList))
 		for i := range args.SessionList {

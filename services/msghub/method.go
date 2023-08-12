@@ -3,30 +3,18 @@ package msghub
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/quick-im/quick-im-core/internal/codec"
 	"github.com/quick-im/quick-im-core/internal/config"
 	"github.com/quick-im/quick-im-core/internal/contant"
 	"github.com/quick-im/quick-im-core/internal/helper"
 	"github.com/quick-im/quick-im-core/internal/msgdb/model"
+	"github.com/quick-im/quick-im-core/internal/quickparam/msghub"
 	"github.com/quick-im/quick-im-core/internal/rpcx"
 	"github.com/quick-im/quick-im-core/services/persistence"
 )
 
-type SendMsgArgs struct {
-	MsgId          string
-	FromSession    int32
-	ConversationID string
-	MsgType        int32
-	Content        []byte
-	SendTime       time.Time
-}
-
-type SendMsgReply struct {
-}
-
-type sendMsgFn func(context.Context, SendMsgArgs, *SendMsgReply) error
+type sendMsgFn func(context.Context, msghub.SendMsgArgs, *msghub.SendMsgReply) error
 
 func (r *rpcxServer) SendMsg(ctx context.Context) sendMsgFn {
 	//TODO: 通过nats进行消息分发
@@ -41,8 +29,8 @@ func (r *rpcxServer) SendMsg(ctx context.Context) sendMsgFn {
 	persistenceService = helper.GetCtxValue(ctx, contant.CTX_SERVICE_PERSISTENCE, persistenceService)
 	var msgbrokerService *rpcx.RpcxClientWithOpt
 	msgbrokerService = helper.GetCtxValue(ctx, contant.CTX_SERVICE_MSGBORKER, msgbrokerService)
-	gobc := codec.GobUtils[SendMsgArgs]{}
-	return func(ctx context.Context, args SendMsgArgs, reply *SendMsgReply) error {
+	gobc := codec.GobUtils[msghub.SendMsgArgs]{}
+	return func(ctx context.Context, args msghub.SendMsgArgs, reply *msghub.SendMsgReply) error {
 		data, err := gobc.Encode(args)
 		if err != nil {
 			r.logger.Error("SendMsg Codec encoding of data failed. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
