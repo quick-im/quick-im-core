@@ -9,8 +9,10 @@ import (
 	"github.com/quick-im/quick-im-core/internal/contant"
 	"github.com/quick-im/quick-im-core/internal/helper"
 	"github.com/quick-im/quick-im-core/internal/msgdb/model"
+	mbp "github.com/quick-im/quick-im-core/internal/quickparam/msgbroker"
 	"github.com/quick-im/quick-im-core/internal/quickparam/msghub"
 	"github.com/quick-im/quick-im-core/internal/rpcx"
+	"github.com/quick-im/quick-im-core/services/msgbroker"
 	"github.com/quick-im/quick-im-core/services/persistence"
 )
 
@@ -39,9 +41,7 @@ func (r *rpcxServer) SendMsg(ctx context.Context) sendMsgFn {
 		// 数据持久化
 		_, err = js.Publish(config.MqMsgPersistenceGroup, data)
 		if err != nil {
-			r.logger.Error("SendMsg: push to nats MqMsgPersistenceGroup failed, started rpcx downgrade call. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
-			reply := &persistence.SaveMsgToDbReply{}
-			err = persistenceService.Call(context.Background(), persistence.SERVICE_SAVE_MSG_TO_DB, model.Msg{
+			broadcastArgs := model.Msg{
 				MsgId:          args.MsgId,
 				ConversationID: args.ConversationID,
 				FromSession:    args.FromSession,
@@ -49,7 +49,10 @@ func (r *rpcxServer) SendMsg(ctx context.Context) sendMsgFn {
 				Status:         0,
 				Type:           args.MsgType,
 				Content:        string(args.Content),
-			}, reply)
+			}
+			r.logger.Error("SendMsg: push to nats MqMsgPersistenceGroup failed, started rpcx downgrade call. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
+			reply := &persistence.SaveMsgToDbReply{}
+			err = persistenceService.Call(ctx, persistence.SERVICE_SAVE_MSG_TO_DB, broadcastArgs, reply)
 			if err != nil {
 				r.logger.Error("SendMsg: nats & rpcx call failed, failed to store message. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
 				return err
@@ -59,7 +62,7 @@ func (r *rpcxServer) SendMsg(ctx context.Context) sendMsgFn {
 			if err != nil {
 				r.logger.Error("SendMsg: push to nats MqMsgBrokerSubject failed, started rpcx downgrade call. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
 				// 这里进行一下降级rpcx广播操作
-				err := msgbrokerService.Broadcast(context.Background(), "method", "args", "reply")
+				err := msgbrokerService.Broadcast(ctx, msgbroker.SERVICE_BROADCAST_RECV, broadcastArgs, &mbp.BroadcastReply{})
 				if err != nil {
 					r.logger.Error("SendMsg: nats & rpcx call failed, failed to send message. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
 					return err

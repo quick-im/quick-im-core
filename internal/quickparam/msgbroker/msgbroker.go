@@ -1,8 +1,10 @@
 package msgbroker
 
-import "github.com/quick-im/quick-im-core/internal/method_param/msghub"
+import (
+	"github.com/quick-im/quick-im-core/internal/msgdb/model"
+)
 
-type BroadcastArgs = msghub.SendMsgArgs
+type BroadcastArgs = model.Msg
 
 type BroadcastReply struct {
 }

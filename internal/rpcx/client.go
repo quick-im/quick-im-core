@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/quick-im/quick-im-core/internal/quickim_errors"
+	"github.com/quick-im/quick-im-core/internal/quickerr"
 	"github.com/quick-im/quick-im-core/internal/tracing"
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
 	cclient "github.com/rpcxio/rpcx-consul/client"
@@ -108,7 +108,7 @@ func (s *RpcxClientWithOpt) Close() error {
 
 func (s *RpcxClientWithOpt) ShutdownTrace() error {
 	if s.tracePtr == nil {
-		return quickim_errors.ErrTraceClosed
+		return quickerr.ErrTraceClosed
 	}
 	return s.tracePtr.Shutdown(s.ctx)
 }

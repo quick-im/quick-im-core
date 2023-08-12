@@ -38,6 +38,7 @@ func NewServer(opts ...Option) *rpcxServer {
 		consulServers:       make([]string, 0),
 		natsServers:         make([]string, 0),
 		natsEnableJetstream: true,
+		serviceName:         SERVER_NAME,
 	}
 	for i := range opts {
 		opts[i](ser)
@@ -55,7 +56,6 @@ func NewServer(opts ...Option) *rpcxServer {
 }
 
 func (s *rpcxServer) Start(ctx context.Context) error {
-	s.logger.Info("start")
 	ser := server.NewServer()
 	// 在服务端添加 Jaeger 拦截器
 	if s.openTracing {
@@ -73,6 +73,7 @@ func (s *rpcxServer) Start(ctx context.Context) error {
 	ctx = context.WithValue(ctx, contant.CTX_SERVICE_MSGBORKER, msgbroker)
 	defer msgbroker.CloseAndShutdownTrace()
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_SEND_MSG, s.SendMsg(ctx), "")
+	// s.logger.Info(s.serviceName, fmt.Sprintf("start at %s:%d", s.ip, s.port))
 	return ser.Serve("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
 }
 

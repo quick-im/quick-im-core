@@ -32,6 +32,7 @@ func NewServer(opts ...Option) *rpcxServer {
 		consulServers:       make([]string, 0),
 		natsServers:         make([]string, 0),
 		natsEnableJetstream: true,
+		serviceName:         SERVER_NAME,
 	}
 	for i := range opts {
 		opts[i](ser)
