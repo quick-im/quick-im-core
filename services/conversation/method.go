@@ -46,7 +46,7 @@ func (s *rpcxServer) CreateConversation(ctx context.Context) createConversationF
 		}
 		reply.ConversationID = uuid.New().String()
 		if err := dbObj.CreateConversation(ctx, reply.ConversationID); err != nil {
-			s.logger.Error("CreateConversation To Db Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			s.logger.Error("CreateConversation dbObj.CreateConversation Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
 		sessions := make([]db.SessionJoinsConversationUseCopyFromParams, len(args.SessionList))
@@ -57,11 +57,11 @@ func (s *rpcxServer) CreateConversation(ctx context.Context) createConversationF
 			}
 		}
 		if _, err := dbObj.SessionJoinsConversationUseCopyFrom(ctx, sessions); err != nil {
-			s.logger.Error("CreateConversation SessionJoinsConversationUseCopyFrom Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			s.logger.Error("CreateConversation dbObj.SessionJoinsConversationUseCopyFrom Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
 		if err := cacheDb.AddConverstaionSessions(reply.ConversationID, args.SessionList); err != nil {
-			s.logger.Error("CreateConversation AddConverstaionSessions Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			s.logger.Error("CreateConversation cacheDb.AddConverstaionSessions Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 		}
 		return nil
 	}
@@ -91,11 +91,11 @@ func (s *rpcxServer) JoinConversation(ctx context.Context) JoinConversationFn {
 			}
 		}
 		if _, err := dbObj.SessionJoinsConversationUseCopyFrom(ctx, sessions); err != nil {
-			s.logger.Error("JoinConversation SessionJoinsConversationUseCopyFrom Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			s.logger.Error("JoinConversation dbObj.SessionJoinsConversationUseCopyFrom Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
 		if err := cacheDb.AddConverstaionSessions(reply.ConversationID, args.SessionList); err != nil {
-			s.logger.Error("JoinConversation AddConverstaionSessions Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			s.logger.Error("JoinConversation cacheDb.AddConverstaionSessions Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 		}
 		return nil
 	}
@@ -119,7 +119,7 @@ func (r *rpcxServer) GetJoinedConversations(ctx context.Context) getJoinedConver
 	return func(ctx context.Context, args GetJoinedConversationsArgs, reply *GetJoinedConversationsReply) error {
 		list, err := dbObj.GetJoinedConversations(ctx, args.SessionId)
 		if err != nil {
-			r.logger.Error("GetJoinedConversations GetJoinedConversations Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			r.logger.Error("GetJoinedConversations dbObj.GetJoinedConversations Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
 		reply.Conversations = make([]string, len(list))
@@ -162,7 +162,7 @@ func (r *rpcxServer) CheckJoinedConversation(ctx context.Context) checkJoinedCon
 			ConversationID: args.ConversationId,
 		})
 		if err != nil {
-			r.logger.Error("CheckJoinedConversation CheckJoinedonversation Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			r.logger.Error("CheckJoinedConversation dbObj.CheckJoinedonversation Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
 		if n > 0 {
@@ -202,11 +202,11 @@ func (r *rpcxServer) KickoutForConversation(ctx context.Context) kickoutJoinedCo
 					reply.Failed = make([]string, 0)
 				}
 				reply.Failed = append(reply.Failed, args.SessionId[i])
-				r.logger.Error("KickoutForConversation KickoutForConversation Err:", fmt.Sprintf("record: %d,arg: %+v", i, params[i]), " err:", err.Error())
+				r.logger.Error("KickoutForConversation dbObj.KickoutForConversation Err:", fmt.Sprintf("record: %d,arg: %+v", i, params[i]), " err:", err.Error())
 			}
 		})
 		if err := cacheDb.DelConversationSession(args.ConversationId, args.SessionId); err != nil {
-			r.logger.Error("KickoutForConversation DelConversationSession Err:", err.Error())
+			r.logger.Error("KickoutForConversation cacheDb.DelConversationSession Err:", err.Error())
 		}
 		return nil
 	}
@@ -230,7 +230,7 @@ func (r *rpcxServer) GetConversationInfo(ctx context.Context) GetConversationInf
 	return func(ctx context.Context, args GetConversationInfoArgs, reply *GetConversationInfoReply) error {
 		info, err := dbObj.GetConversationInfo(ctx, args.ConversationId)
 		if err != nil {
-			r.logger.Error("GetConversationInfo GetConversationInfo Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			r.logger.Error("GetConversationInfo dbObj.GetConversationInfo Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
 		reply.Conversation = info
@@ -260,7 +260,7 @@ func (r *rpcxServer) SetDeleteConversation(ctx context.Context) SetDeleteConvers
 					reply.Failed = make([]string, 0)
 				}
 				reply.Failed = append(reply.Failed, args.ConversationId[i])
-				r.logger.Error("SetDeleteConversation DeleteConversations Err:", fmt.Sprintf("record: %d,arg: %+v", i, args.ConversationId[i]), " err:", err.Error())
+				r.logger.Error("SetDeleteConversation dbObj.DeleteConversations Err:", fmt.Sprintf("record: %d,arg: %+v", i, args.ConversationId[i]), " err:", err.Error())
 			}
 		})
 		return nil
@@ -291,7 +291,7 @@ func (r *rpcxServer) SetArchiveConversations(ctx context.Context) SetArchiveConv
 						reply.Failed = make([]string, 0)
 					}
 					reply.Failed = append(reply.Failed, args.ConversationId[i])
-					r.logger.Error("SetArchiveConversations ArchiveConversations Err:", fmt.Sprintf("record: %d,arg: %+v", i, args.ConversationId[i]), " err:", err.Error())
+					r.logger.Error("SetArchiveConversations dbObj.ArchiveConversations Err:", fmt.Sprintf("record: %d,arg: %+v", i, args.ConversationId[i]), " err:", err.Error())
 				}
 			})
 		} else {
@@ -301,7 +301,7 @@ func (r *rpcxServer) SetArchiveConversations(ctx context.Context) SetArchiveConv
 						reply.Failed = make([]string, 0)
 					}
 					reply.Failed = append(reply.Failed, args.ConversationId[i])
-					r.logger.Error("SetArchiveConversations UnArchiveConversations Err:", fmt.Sprintf("record: %d,arg: %+v", i, args.ConversationId[i]), " err:", err.Error())
+					r.logger.Error("SetArchiveConversations dbObj.UnArchiveConversations Err:", fmt.Sprintf("record: %d,arg: %+v", i, args.ConversationId[i]), " err:", err.Error())
 				}
 			})
 		}
@@ -334,7 +334,7 @@ func (r *rpcxServer) UpdateConversationLastMsg(ctx context.Context) UpdateConver
 			ConversationID:  args.ConversationId,
 		})
 		if err != nil {
-			r.logger.Error("UpdateConversationLastMsg UpdateConversationLastMsg Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			r.logger.Error("UpdateConversationLastMsg dbObj.UpdateConversationLastMsg Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 		}
 		return err
 	}
@@ -359,7 +359,7 @@ func (r *rpcxServer) GetConversationSessions(ctx context.Context) GetConversatio
 	return func(ctx context.Context, args GetConversationSessionsArgs, reply *GetConversationSessionsReply) error {
 		sessions, err := cacheDb.GetConversationSessions(args.ConversationId)
 		if err != nil {
-			r.logger.Error("GetConversationSessions GetConversationSessions Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			r.logger.Error("GetConversationSessions cacheDb.GetConversationSessions Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			ids, err := dbObj.GetConversationsAllUsers(ctx)
 			if err != nil {
 				r.logger.Error("GetConversationSessions dbObj.GetConversationsAllUsers Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
@@ -370,6 +370,9 @@ func (r *rpcxServer) GetConversationSessions(ctx context.Context) GetConversatio
 			}
 		} else {
 			reply.Sessions = sessions
+		}
+		if err := cacheDb.AddConverstaionSessions(args.ConversationId, reply.Sessions); err != nil {
+			r.logger.Error("GetConversationSessions cacheDb.AddConverstaionSessions Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 		}
 		return nil
 	}

@@ -31,7 +31,7 @@ func (r *rpcxServer) SaveMsgToDb(ctx context.Context) saveMsgToDbFn {
 			Insert(args.Msgs).
 			RunWrite(rdb)
 		if err != nil {
-			r.logger.Error("SaveMsgToDb Err", fmt.Sprintf("result:%+v arg:%+v err:%v", result, args, err))
+			r.logger.Error("SaveMsgToDb rethinkdb.Insert Err", fmt.Sprintf("result:%+v arg:%+v err:%v", result, args, err))
 		}
 		return err
 	}
@@ -64,12 +64,12 @@ func (r *rpcxServer) GetMsgFromDbInRange(ctx context.Context) getMsgFromDbInRang
 			).
 			Run(rdb)
 		if err != nil {
-			r.logger.Error("GetMsgFromDbInRange GetMsgFromDbInRange Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
+			r.logger.Error("GetMsgFromDbInRange rethinkdb.GetMsgFromDbInRange Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
 			return err
 		}
 		defer rows.Close()
 		if err := rows.All(&msgs); err != nil {
-			r.logger.Error("GetMsgFromDbInRange Bind To Struct Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
+			r.logger.Error("GetMsgFromDbInRange rethinkdb.Bind To Struct Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
 			return err
 		}
 		if args.Sort == contant.Asc {
@@ -111,12 +111,12 @@ func (r *rpcxServer) GetLast30MsgFromDb(ctx context.Context) getLast30MsgFromDbF
 			Limit(30).
 			Run(rdb)
 		if err != nil {
-			r.logger.Error("GetLast30MsgFromDb GetLast30MsgFromDb Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
+			r.logger.Error("GetLast30MsgFromDb rethinkdb.GetLast30MsgFromDb Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
 			return err
 		}
 		defer rows.Close()
 		if err := rows.All(&msgs); err != nil {
-			r.logger.Error("GetLast30MsgFromDb Bind To Struct Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
+			r.logger.Error("GetLast30MsgFromDb rethinkdb.Bind To Struct Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
 			return err
 		}
 		if args.Sort == contant.Asc {
@@ -160,12 +160,12 @@ func (r *rpcxServer) GetThe30MsgBeforeTheId(ctx context.Context) getThe30MsgBefo
 			Limit(30).
 			Run(rdb)
 		if err != nil {
-			r.logger.Error("GetThe30MsgBeforeTheId GetThe30MsgBeforeTheId Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
+			r.logger.Error("GetThe30MsgBeforeTheId rethinkdb.GetThe30MsgBeforeTheId Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
 			return err
 		}
 		defer rows.Close()
 		if err := rows.All(&msgs); err != nil {
-			r.logger.Error("GetThe30MsgBeforeTheId Bind To Struct Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
+			r.logger.Error("GetThe30MsgBeforeTheId rethinkdb.Bind To Struct Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
 			return err
 		}
 		if args.Sort == contant.Asc {
@@ -209,12 +209,12 @@ func (r *rpcxServer) GetThe30MsgAfterTheId(ctx context.Context) getThe30MsgAfter
 			Limit(30).
 			Run(rdb)
 		if err != nil {
-			r.logger.Error("GetThe30MsgAfterTheId GetThe30MsgBeforeTheId Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
+			r.logger.Error("GetThe30MsgAfterTheId rethinkdb.GetThe30MsgBeforeTheId Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
 			return err
 		}
 		defer rows.Close()
 		if err := rows.All(&msgs); err != nil {
-			r.logger.Error("GetThe30MsgAfterTheId Bind To Struct Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
+			r.logger.Error("GetThe30MsgAfterTheId rethinkdb.Bind To Struct Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
 			return err
 		}
 		if args.Sort == contant.Asc {
