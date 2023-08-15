@@ -88,6 +88,37 @@ func (q *Queries) GetConversationUnReadMsgCount(ctx context.Context, arg GetConv
 	return unread, err
 }
 
+const getConversationsAllUsers = `-- name: GetConversationsAllUsers :many
+SELECT id, session_id, last_recv_msg_id, is_kick_out, conversation_id
+FROM public.conversation_session_id WHERE conversation_id = conversation_id::text
+`
+
+func (q *Queries) GetConversationsAllUsers(ctx context.Context) ([]ConversationSessionID, error) {
+	rows, err := q.db.Query(ctx, getConversationsAllUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ConversationSessionID
+	for rows.Next() {
+		var i ConversationSessionID
+		if err := rows.Scan(
+			&i.ID,
+			&i.SessionID,
+			&i.LastRecvMsgID,
+			&i.IsKickOut,
+			&i.ConversationID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getJoinedConversations = `-- name: GetJoinedConversations :many
 SELECT id, session_id, last_recv_msg_id, is_kick_out, conversation_id, 0 as unread
 FROM public.conversation_session_id WHERE session_id = $1::varchar AND is_kick_out = false

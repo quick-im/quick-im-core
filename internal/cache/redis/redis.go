@@ -1,4 +1,4 @@
-package cache
+package redis
 
 import (
 	"fmt"
@@ -50,7 +50,7 @@ func WithPassword(password string) redisOpt {
 	}
 }
 
-func (r *redisClientOpt) GetRedis() *redis.Client {
+func (r *redisClientOpt) GetRedis() *adapter {
 	rClient := redis.NewClient(
 		&redis.Options{
 			Addr:     fmt.Sprintf("%s:%d", r.host, r.port),
@@ -58,5 +58,5 @@ func (r *redisClientOpt) GetRedis() *redis.Client {
 			Password: r.password,
 		},
 	)
-	return rClient
+	return &adapter{rClient}
 }

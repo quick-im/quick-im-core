@@ -77,3 +77,7 @@ FROM public.messages WHERE conversation_id = @conversation_id::text AND msg_id <
 -- name: GetThe30MsgAfterTheId :many
 SELECT msg_id, conversation_id, from_session, send_time, status, "type", "content"
 FROM public.messages WHERE conversation_id = @conversation_id::text AND msg_id > @msg_id::text ORDER BY msg_id ASC LIMIT 30;
+
+-- name: GetConversationsAllUsers :many
+SELECT id, session_id, last_recv_msg_id, is_kick_out, conversation_id
+FROM public.conversation_session_id WHERE conversation_id = conversation_id::text;
