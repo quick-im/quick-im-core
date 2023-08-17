@@ -14,6 +14,8 @@ func main() {
 		msgid.WithOpenTracing(true),
 		msgid.WithJeagerServiceName("msgid"),
 		msgid.WithJeagerAgentHostPort("127.0.0.1:6831"),
+		msgid.WithUseConsulRegistry(true),
+		msgid.WithConsulServers("127.0.0.1:8500"),
 	).Start(ctx); err != nil {
 		panic(err)
 	}

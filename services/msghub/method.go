@@ -62,6 +62,7 @@ func (r *rpcxServer) SendMsg(ctx context.Context) sendMsgFn {
 			if err != nil {
 				r.logger.Error("SendMsg: push to nats MqMsgBrokerSubject failed, started rpcx downgrade call. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
 				// 这里进行一下降级rpcx广播操作
+				// 如果
 				err := msgbrokerService.Broadcast(ctx, msgbroker.SERVICE_BROADCAST_RECV, broadcastArgs, &mbp.BroadcastReply{})
 				if err != nil {
 					r.logger.Error("SendMsg: nats & rpcx call failed, failed to send message. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))

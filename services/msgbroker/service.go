@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/quick-im/quick-im-core/internal/config"
 	"github.com/quick-im/quick-im-core/internal/logger"
 	"github.com/quick-im/quick-im-core/internal/logger/innerzap"
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
@@ -69,7 +70,7 @@ func (s *rpcxServer) addRegistryPlugin(ser *server.Server) {
 	r := &cserver.ConsulRegisterPlugin{
 		ServiceAddress: "tcp@" + fmt.Sprintf("%s:%d", s.ip, s.port),
 		ConsulServers:  s.consulServers,
-		BasePath:       SERVER_NAME,
+		BasePath:       config.ServerPrefix,
 		UpdateInterval: time.Minute,
 	}
 	err := r.Start()

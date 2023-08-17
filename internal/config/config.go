@@ -11,4 +11,6 @@ const (
 	MqMsgBrokerSubject = "quickim.msg.msgbroker"
 	// 消息持久化表
 	RethinkMsgDb = "msg"
+	// 注册中心服务前缀
+	ServerPrefix = "quick.im.instance.1"
 )

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/nats-io/nats.go"
+	"github.com/quick-im/quick-im-core/internal/config"
 	"github.com/quick-im/quick-im-core/internal/contant"
 	"github.com/quick-im/quick-im-core/internal/logger"
 	"github.com/quick-im/quick-im-core/internal/logger/innerzap"
@@ -84,7 +85,7 @@ func (s *rpcxServer) addRegistryPlugin(ser *server.Server) {
 	r := &cserver.ConsulRegisterPlugin{
 		ServiceAddress: "tcp@" + fmt.Sprintf("%s:%d", s.ip, s.port),
 		ConsulServers:  s.consulServers,
-		BasePath:       SERVER_NAME,
+		BasePath:       config.ServerPrefix,
 		UpdateInterval: time.Minute,
 	}
 	err := r.Start()
@@ -116,6 +117,7 @@ func (s *rpcxServer) InitNats() *messaging.NatsWarp {
 
 func (r *rpcxServer) InitDepServices(serviceName string) *rpcx.RpcxClientWithOpt {
 	service, err := rpcx.NewClient(
+		rpcx.WithBasePath(config.ServerPrefix),
 		rpcx.WithUseConsulRegistry(r.useConsulRegistry),
 		rpcx.WithConsulServers(r.consulServers...),
 		rpcx.WithServiceName(serviceName),

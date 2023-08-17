@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/quick-im/quick-im-core/internal/config"
 	"github.com/quick-im/quick-im-core/internal/rpcx"
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
 	"github.com/quick-im/quick-im-core/services/msgid"
@@ -34,7 +35,7 @@ func TestServer(t *testing.T) {
 }
 
 func TestConsul(t *testing.T) {
-	d, _ := cclient.NewConsulDiscovery(msgid.SERVER_NAME, msgid.SERVER_NAME, []string{"127.0.0.1:8500"}, nil)
+	d, _ := cclient.NewConsulDiscovery(config.ServerPrefix, msgid.SERVER_NAME, []string{"127.0.0.1:8500"}, nil)
 	xclient := client.NewXClient(msgid.SERVER_NAME, client.Failtry, client.RandomSelect, d, client.DefaultOption)
 	defer xclient.Close()
 	plugins := client.NewPluginContainer()
@@ -54,6 +55,7 @@ func TestConsul(t *testing.T) {
 
 func TestOptClient(t *testing.T) {
 	c, err := rpcx.NewClient(
+		rpcx.WithBasePath(config.ServerPrefix),
 		rpcx.WithServerAddress("127.0.0.1:8018"),
 		rpcx.WithServiceName(msgid.SERVER_NAME),
 		rpcx.WithOpenTracing(true),

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/quick-im/quick-im-core/internal/config"
 	"github.com/quick-im/quick-im-core/internal/quickerr"
 	"github.com/quick-im/quick-im-core/internal/tracing"
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
@@ -17,6 +18,7 @@ import (
 type RpcxClientWithOpt struct {
 	openTracing              bool
 	useConsulRegistry        bool
+	basePath                 string
 	serviceName              string
 	serverAddress            string
 	consulServers            []string
@@ -60,6 +62,12 @@ func WithUseConsulRegistry(useConsulRegistry bool) rpcxOption {
 	}
 }
 
+func WithBasePath(basePath string) rpcxOption {
+	return func(rco *RpcxClientWithOpt) {
+		rco.basePath = basePath
+	}
+}
+
 func WithConsulServer(server string) rpcxOption {
 	return func(rco *RpcxClientWithOpt) {
 		rco.consulServers = append(rco.consulServers, server)
@@ -75,6 +83,7 @@ func WithConsulServers(servers ...string) rpcxOption {
 func NewClient(opts ...rpcxOption) (*RpcxClientWithOpt, error) {
 	c := &RpcxClientWithOpt{
 		consulServers: make([]string, 0),
+		basePath:      config.ServerPrefix,
 	}
 	for i := range opts {
 		opts[i](c)
