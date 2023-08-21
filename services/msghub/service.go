@@ -105,8 +105,8 @@ func (s *rpcxServer) InitNats() *messaging.NatsWarp {
 			s.logger.Fatal("get nats jetstream err", fmt.Sprintf("%v", err))
 		}
 		_, err = js.AddStream(&nats.StreamConfig{
-			Name:     "MSG_STREAM",
-			Subjects: []string{"stream.msg.>"},
+			Name:     config.NatsStreamName,
+			Subjects: []string{config.MqMsgPrefix},
 		})
 		if err != nil {
 			s.logger.Fatal("add stream to nats jetstream err", fmt.Sprintf("%v", err))
