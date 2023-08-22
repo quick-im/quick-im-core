@@ -98,6 +98,7 @@ func (s *rpcxServer) addRegistryPlugin(ser *server.Server) {
 func (s *rpcxServer) InitNats() *messaging.NatsWarp {
 	nc := messaging.NewNatsWithOpt(
 		messaging.WithServers(s.natsServers...),
+		messaging.WithJetStream(s.natsEnableJetstream),
 	).GetNats()
 	if s.natsEnableJetstream {
 		js, err := nc.JetStream()

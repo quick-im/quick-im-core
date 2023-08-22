@@ -56,7 +56,7 @@ func (s *rpcxServer) Start(ctx context.Context) error {
 	ser := server.NewServer()
 	nc := s.InitNats()
 	defer nc.Close()
-	go s.listenMsg(nc)
+	go s.listenMsg(ctx, nc)
 	// 在服务端添加 Jaeger 拦截器
 	if s.openTracing {
 		tracer, ctx := plugin.AddServerTrace(ser, s.serviceName, s.trackAgentHostPort)
@@ -74,6 +74,7 @@ func (s *rpcxServer) Start(ctx context.Context) error {
 func (s *rpcxServer) InitNats() *messaging.NatsWarp {
 	nc := messaging.NewNatsWithOpt(
 		messaging.WithServers(s.natsServers...),
+		messaging.WithJetStream(s.natsEnableJetstream),
 	).GetNats()
 	if s.natsEnableJetstream {
 		js, err := nc.JetStream()

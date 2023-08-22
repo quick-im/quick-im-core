@@ -19,7 +19,7 @@ func (gu *GobUtils[T]) Encode(data T) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (gu *GobUtils[T]) Decode(data []byte, result interface{}) error {
+func (gu *GobUtils[T]) Decode(data []byte, result *T) error {
 	buf := bytes.NewReader(data)
 	decoder := gob.NewDecoder(buf)
 

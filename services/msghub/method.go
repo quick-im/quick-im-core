@@ -31,9 +31,18 @@ func (r *rpcxServer) SendMsg(ctx context.Context) sendMsgFn {
 	persistenceService = helper.GetCtxValue(ctx, contant.CTX_SERVICE_PERSISTENCE, persistenceService)
 	var msgbrokerService *rpcx.RpcxClientWithOpt
 	msgbrokerService = helper.GetCtxValue(ctx, contant.CTX_SERVICE_MSGBORKER, msgbrokerService)
-	gobc := codec.GobUtils[msghub.SendMsgArgs]{}
+	gobc := codec.GobUtils[model.Msg]{}
 	return func(ctx context.Context, args msghub.SendMsgArgs, reply *msghub.SendMsgReply) error {
-		data, err := gobc.Encode(args)
+		broadcastArgs := model.Msg{
+			MsgId:          args.MsgId,
+			ConversationID: args.ConversationID,
+			FromSession:    args.FromSession,
+			SendTime:       args.SendTime,
+			Status:         0,
+			Type:           args.MsgType,
+			Content:        string(args.Content),
+		}
+		data, err := gobc.Encode(broadcastArgs)
 		if err != nil {
 			r.logger.Error("SendMsg Codec encoding of data failed. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
 			return err
@@ -41,6 +50,19 @@ func (r *rpcxServer) SendMsg(ctx context.Context) sendMsgFn {
 		// 数据持久化
 		_, err = js.Publish(config.MqMsgPersistenceGroup, data)
 		if err != nil {
+			r.logger.Error("SendMsg: push to nats MqMsgPersistenceGroup failed, started rpcx downgrade call. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
+			reply := &persistence.SaveMsgToDbReply{}
+			err = persistenceService.Call(ctx, persistence.SERVICE_SAVE_MSG_TO_DB, broadcastArgs, reply)
+			if err != nil {
+				r.logger.Error("SendMsg: nats & rpcx call failed, failed to store message. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
+				return err
+			}
+		}
+		// 消息广播给消息交付组件
+		_, err = js.Publish(config.MqMsgBrokerSubject, data)
+		if err != nil {
+			r.logger.Error("SendMsg: push to nats MqMsgBrokerSubject failed, started rpcx downgrade call. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
+			// 这里进行一下降级rpcx广播操作
 			broadcastArgs := model.Msg{
 				MsgId:          args.MsgId,
 				ConversationID: args.ConversationID,
@@ -50,24 +72,10 @@ func (r *rpcxServer) SendMsg(ctx context.Context) sendMsgFn {
 				Type:           args.MsgType,
 				Content:        string(args.Content),
 			}
-			r.logger.Error("SendMsg: push to nats MqMsgPersistenceGroup failed, started rpcx downgrade call. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
-			reply := &persistence.SaveMsgToDbReply{}
-			err = persistenceService.Call(ctx, persistence.SERVICE_SAVE_MSG_TO_DB, broadcastArgs, reply)
+			err := msgbrokerService.Broadcast(ctx, msgbroker.SERVICE_BROADCAST_RECV, broadcastArgs, &mbp.BroadcastReply{})
 			if err != nil {
-				r.logger.Error("SendMsg: nats & rpcx call failed, failed to store message. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
+				r.logger.Error("SendMsg: nats & rpcx call failed, failed to send message. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
 				return err
-			}
-			// 消息广播给消息交付组件
-			_, err = js.Publish(config.MqMsgBrokerSubject, data)
-			if err != nil {
-				r.logger.Error("SendMsg: push to nats MqMsgBrokerSubject failed, started rpcx downgrade call. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
-				// 这里进行一下降级rpcx广播操作
-				// 如果
-				err := msgbrokerService.Broadcast(ctx, msgbroker.SERVICE_BROADCAST_RECV, broadcastArgs, &mbp.BroadcastReply{})
-				if err != nil {
-					r.logger.Error("SendMsg: nats & rpcx call failed, failed to send message. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
-					return err
-				}
 			}
 		}
 		return nil

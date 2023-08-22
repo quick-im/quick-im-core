@@ -8,7 +8,8 @@ import (
 )
 
 type natsClientOpt struct {
-	servers []string
+	servers     []string
+	useJsStream bool
 }
 
 type NatsWarp struct {
@@ -41,6 +42,12 @@ func WithServers(servers ...string) natsOpt {
 	}
 }
 
+func WithJetStream(jetstream bool) natsOpt {
+	return func(nco *natsClientOpt) {
+		nco.useJsStream = jetstream
+	}
+}
+
 func (n *natsClientOpt) GetNats() *NatsWarp {
 	nc, err := nats.Connect(strings.Join(n.servers, ","))
 	if err != nil {
@@ -48,7 +55,7 @@ func (n *natsClientOpt) GetNats() *NatsWarp {
 	}
 	return &NatsWarp{
 		nc,
-		false,
+		n.useJsStream,
 		nil,
 	}
 }

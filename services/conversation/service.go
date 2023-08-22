@@ -6,11 +6,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/nats-io/nats.go"
 	"github.com/quick-im/quick-im-core/internal/config"
 	"github.com/quick-im/quick-im-core/internal/logger"
 	"github.com/quick-im/quick-im-core/internal/logger/innerzap"
-	"github.com/quick-im/quick-im-core/internal/messaging"
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
 	cserver "github.com/rpcxio/rpcx-consul/serverplugin"
 	"github.com/smallnest/rpcx/server"
@@ -54,9 +52,10 @@ func NewServer(opts ...Option) *rpcxServer {
 
 func (s *rpcxServer) Start(ctx context.Context) error {
 	ser := server.NewServer()
-	nc := s.InitNats()
-	defer nc.Close()
-	go s.listenMsg(nc)
+	// nc := s.InitNats()
+	// defer nc.Close()
+	// 是否使用消息队列待定
+	// go s.listenMsg(ctx, nc)
 	// 在服务端添加 Jaeger 拦截器
 	if s.openTracing {
 		tracer, ctx := plugin.AddServerTrace(ser, s.serviceName, s.trackAgentHostPort)
@@ -76,25 +75,25 @@ func (s *rpcxServer) Start(ctx context.Context) error {
 	return ser.Serve("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
 }
 
-func (s *rpcxServer) InitNats() *messaging.NatsWarp {
-	nc := messaging.NewNatsWithOpt(
-		messaging.WithServers(s.natsServers...),
-	).GetNats()
-	if s.natsEnableJetstream {
-		js, err := nc.JetStream()
-		if err != nil {
-			s.logger.Fatal("get nats jetstream err", fmt.Sprintf("%v", err))
-		}
-		_, err = js.AddStream(&nats.StreamConfig{
-			Name:     config.NatsStreamName,
-			Subjects: []string{config.MqMsgPrefix},
-		})
-		if err != nil {
-			s.logger.Fatal("add stream to nats jetstream err", fmt.Sprintf("%v", err))
-		}
-	}
-	return nc
-}
+// func (s *rpcxServer) InitNats() *messaging.NatsWarp {
+// 	nc := messaging.NewNatsWithOpt(
+// 		messaging.WithServers(s.natsServers...),
+// 	).GetNats()
+// 	if s.natsEnableJetstream {
+// 		js, err := nc.JetStream()
+// 		if err != nil {
+// 			s.logger.Fatal("get nats jetstream err", fmt.Sprintf("%v", err))
+// 		}
+// 		_, err = js.AddStream(&nats.StreamConfig{
+// 			Name:     config.NatsStreamName,
+// 			Subjects: []string{config.MqMsgPrefix},
+// 		})
+// 		if err != nil {
+// 			s.logger.Fatal("add stream to nats jetstream err", fmt.Sprintf("%v", err))
+// 		}
+// 	}
+// 	return nc
+// }
 
 func (s *rpcxServer) addRegistryPlugin(ser *server.Server) {
 	if !s.useConsulRegistry {
