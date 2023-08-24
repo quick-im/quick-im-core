@@ -330,7 +330,7 @@ type SessionJoinsConversationUseCopyFromParams struct {
 	ConversationID string
 }
 
-const updateConversationLastMsg = `-- name: UpdateCo    nversationLastMsg :exec
+const updateConversationLastMsg = `-- name: UpdateConversationLastMsg :exec
 UPDATE public.conversations
 SET last_msg_id= $2::varchar, last_send_time=$1, last_send_session= $3::varchar
 WHERE conversation_id= $4::varchar

@@ -2,6 +2,7 @@ package msgbroker
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/nats-io/nats.go"
 	"github.com/quick-im/quick-im-core/internal/codec"
@@ -21,6 +22,7 @@ func (r *rpcxServer) listenMsg(ctx context.Context, nc *messaging.NatsWarp) {
 	sub, err := js.Subscribe(config.MqMsgBrokerSubject, func(msg *nats.Msg) {
 		// 广播
 		_ = c.Decode(msg.Data, &msgData)
+		println(fmt.Sprintf("%#v", msgData))
 		msg.Ack()
 	}, nats.DeliverNew())
 	if err != nil {

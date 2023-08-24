@@ -20,10 +20,10 @@ func TestSendMsg(t *testing.T) {
 	defer xclient.Close()
 	msg := msghub.SendMsgArgs{
 		MsgId:          uuid.New().String(),
-		FromSession:    0,
+		FromSession:    "0",
 		ConversationID: "0.0.0.0",
 		MsgType:        0,
-		Content:        []byte("哈哈哈哈哈"),
+		Content:        []byte("哈哈哈哈哈1111"),
 		SendTime:       time.Now(),
 	}
 	reply := msghub.SendMsgReply{}

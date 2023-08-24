@@ -22,7 +22,7 @@ func TestServerSaveMsgToDb(t *testing.T) {
 			{
 				MsgId:          "EBVYE-795J-246S-RBG",
 				ConversationID: "1",
-				FromSession:    0,
+				FromSession:    "0",
 				SendTime:       time.Now(),
 				Status:         0,
 				Type:           0,
@@ -31,7 +31,7 @@ func TestServerSaveMsgToDb(t *testing.T) {
 			{
 				MsgId:          "EBVYE-796J-266S-RBG",
 				ConversationID: "1",
-				FromSession:    0,
+				FromSession:    "0",
 				SendTime:       time.Now(),
 				Status:         0,
 				Type:           0,

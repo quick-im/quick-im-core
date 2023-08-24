@@ -4,7 +4,7 @@ import "time"
 
 type SendMsgArgs struct {
 	MsgId          string
-	FromSession    int32
+	FromSession    string
 	ConversationID string
 	MsgType        int32
 	Content        []byte
