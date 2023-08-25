@@ -11,6 +11,7 @@ import (
 	"github.com/quick-im/quick-im-core/internal/logger"
 	"github.com/quick-im/quick-im-core/internal/logger/innerzap"
 	"github.com/quick-im/quick-im-core/internal/messaging"
+	"github.com/quick-im/quick-im-core/internal/quickparam/msgbroker"
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
 	cserver "github.com/rpcxio/rpcx-consul/serverplugin"
 	"github.com/smallnest/rpcx/server"
@@ -28,6 +29,7 @@ type rpcxServer struct {
 	natsServers         []string
 	natsEnableJetstream bool
 	logger              logger.Logger
+	connList            map[string]msgbroker.RegisterSessionInfo
 }
 
 func NewServer(opts ...Option) *rpcxServer {
@@ -36,6 +38,7 @@ func NewServer(opts ...Option) *rpcxServer {
 		natsServers:         make([]string, 0),
 		natsEnableJetstream: true,
 		serviceName:         SERVER_NAME,
+		connList:            make(map[string]msgbroker.RegisterSessionInfo, 100),
 	}
 	for i := range opts {
 		opts[i](ser)

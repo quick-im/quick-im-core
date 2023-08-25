@@ -34,10 +34,12 @@ func (r *rpcxServer) listenMsg(ctx context.Context, nc *messaging.NatsWarp) {
 			Insert(msgData).
 			RunWrite(rdb)
 		if err != nil {
+			msg.Nak()
 			r.logger.Error("SaveMsgToDb rethinkdb.Insert Err", fmt.Sprintf("result:%+v arg:%+v err:%v", result, msgData, err))
+			return
 		}
 		msg.Ack()
-	}, nats.AckExplicit(), nats.AckWait(30*time.Second))
+	}, nats.AckExplicit(), nats.AckWait(30*time.Second), nats.MaxDeliver(3))
 	if err != nil {
 		r.logger.Warn("ListenMsg Err", err.Error())
 	}
