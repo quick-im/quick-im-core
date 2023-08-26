@@ -371,6 +371,9 @@ func (r *rpcxServer) GetConversationSessions(ctx context.Context) GetConversatio
 		} else {
 			reply.Sessions = sessions
 		}
+		if len(reply.Sessions) == 0 {
+			return nil
+		}
 		if err := cacheDb.AddConverstaionSessions(args.ConversationId, reply.Sessions); err != nil {
 			r.logger.Error("GetConversationSessions cacheDb.AddConverstaionSessions Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 		}

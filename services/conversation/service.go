@@ -72,6 +72,7 @@ func (s *rpcxServer) Start(ctx context.Context) error {
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_GET_JOINED_CONVERSATIONS, s.GetJoinedConversations(ctx), "")
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_KICKOUT_FOR_CONVERSATION, s.KickoutForConversation(ctx), "")
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_UPDATE_CONVERSATION_LASTMSG, s.UpdateConversationLastMsg(ctx), "")
+	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_GET_CONVERSATION_SSESSIONS, s.GetConversationSessions(ctx), "")
 	return ser.Serve("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
 }
 

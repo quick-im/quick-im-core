@@ -12,7 +12,7 @@ func main() {
 		msgid.WithIp("0.0.0.0"),
 		msgid.WithPort(8018),
 		msgid.WithOpenTracing(true),
-		msgid.WithJeagerServiceName("msgid"),
+		msgid.WithJeagerServiceName(msgid.SERVER_NAME),
 		msgid.WithJeagerAgentHostPort("127.0.0.1:6831"),
 		msgid.WithUseConsulRegistry(true),
 		msgid.WithConsulServers("127.0.0.1:8500"),

@@ -28,17 +28,18 @@ func (r *rpcxServer) listenMsg(ctx context.Context, nc *messaging.NatsWarp) {
 	sub, err := js.QueueSubscribe(config.MqMsgPersistenceGroup, "quickim-persistence", func(msg *nats.Msg) {
 		if err := c.Decode(msg.Data, &msgData); err != nil {
 			r.logger.Error("listenMsg SaveMsgToDb GobDecode Err", fmt.Sprintf("arg:%+v err:%v", msg.Data, err))
+			_ = msg.Ack()
 			return
 		}
 		result, err := rethinkdb.Table(config.RethinkMsgDb).
 			Insert(msgData).
 			RunWrite(rdb)
 		if err != nil {
-			msg.Nak()
+			_ = msg.Nak()
 			r.logger.Error("SaveMsgToDb rethinkdb.Insert Err", fmt.Sprintf("result:%+v arg:%+v err:%v", result, msgData, err))
 			return
 		}
-		msg.Ack()
+		_ = msg.Ack()
 	}, nats.AckExplicit(), nats.AckWait(30*time.Second), nats.MaxDeliver(3))
 	if err != nil {
 		r.logger.Warn("ListenMsg Err", err.Error())

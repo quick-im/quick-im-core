@@ -27,6 +27,9 @@ func main() {
 	if err := persistence.NewServer(
 		persistence.WithIp("0.0.0.0"),
 		persistence.WithPort(8015),
+		persistence.WithOpenTracing(true),
+		persistence.WithJeagerServiceName(persistence.SERVER_NAME),
+		persistence.WithJeagerAgentHostPort("127.0.0.1:6831"),
 		persistence.WithNatsServers("nats://127.0.0.1:4222"),
 		persistence.WithUseConsulRegistry(true),
 		persistence.WithConsulServers("127.0.0.1:8500"),

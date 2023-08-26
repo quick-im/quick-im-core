@@ -29,6 +29,11 @@ func main() {
 	if err := conversation.NewServer(
 		conversation.WithIp("0.0.0.0"),
 		conversation.WithPort(8016),
+		conversation.WithOpenTracing(true),
+		conversation.WithJeagerServiceName(conversation.SERVER_NAME),
+		conversation.WithJeagerAgentHostPort("127.0.0.1:6831"),
+		conversation.WithUseConsulRegistry(true),
+		conversation.WithConsulServers("127.0.0.1:8500"),
 	).Start(ctx); err != nil {
 		panic(err)
 	}

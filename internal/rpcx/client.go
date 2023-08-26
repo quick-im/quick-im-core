@@ -20,6 +20,7 @@ type RpcxClientWithOpt struct {
 	useConsulRegistry        bool
 	basePath                 string
 	serviceName              string
+	clientName               string
 	serverAddress            string
 	consulServers            []string
 	trackJaegeragentHostPort string
@@ -41,6 +42,12 @@ func WithOpenTracing(disable bool) rpcxOption {
 func WithServiceName(serviceName string) rpcxOption {
 	return func(rs *RpcxClientWithOpt) {
 		rs.serviceName = serviceName
+	}
+}
+
+func WithClientName(clientName string) rpcxOption {
+	return func(rs *RpcxClientWithOpt) {
+		rs.clientName = clientName
 	}
 }
 
@@ -91,7 +98,7 @@ func NewClient(opts ...rpcxOption) (*RpcxClientWithOpt, error) {
 	var cliDiscovery client.ServiceDiscovery
 	var err error
 	if len(c.consulServers) != 0 {
-		cliDiscovery, err = cclient.NewConsulDiscovery(c.serviceName, c.serviceName, c.consulServers, nil)
+		cliDiscovery, err = cclient.NewConsulDiscovery(config.ServerPrefix, c.serviceName, c.consulServers, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -138,11 +145,17 @@ func (s *RpcxClientWithOpt) CloseAndShutdownTrace() error {
 }
 
 func (s *RpcxClientWithOpt) Call(ctx context.Context, serviceMethod string, arg interface{}, replay interface{}) error {
+	if s.ctx == nil {
+		s.ctx = ctx
+	}
 	ctxInner := context.WithValue(s.ctx, ctxInitInner("initCtx"), nil)
 	return s.xclient.Call(ctxInner, serviceMethod, arg, replay)
 }
 
 func (s *RpcxClientWithOpt) Broadcast(ctx context.Context, serviceMethod string, arg interface{}, replay interface{}) error {
+	if s.ctx == nil {
+		s.ctx = ctx
+	}
 	ctxInner := context.WithValue(s.ctx, ctxInitInner("initCtx"), nil)
 	return s.xclient.Broadcast(ctxInner, serviceMethod, arg, replay)
 }
@@ -150,11 +163,11 @@ func (s *RpcxClientWithOpt) Broadcast(ctx context.Context, serviceMethod string,
 func (s *RpcxClientWithOpt) addTrace(xclient client.XClient) (*trace.TracerProvider, context.Context) {
 	// 添加 Jaeger 拦截器
 	plugins := client.NewPluginContainer()
-	tracer, ctx, err := tracing.InitJaeger("client", s.trackJaegeragentHostPort)
+	tracer, ctx, err := tracing.InitJaeger(s.clientName, s.trackJaegeragentHostPort)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to initialize Jaeger: %v", err))
 	}
-	ts := otel.Tracer("client")
+	ts := otel.Tracer(s.clientName)
 	plugins.Add(plugin.NewClientTracingPlugin(ts))
 	xclient.SetPlugins(plugins)
 	return tracer, ctx

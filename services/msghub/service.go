@@ -122,6 +122,7 @@ func (r *rpcxServer) InitDepServices(serviceName string) *rpcx.RpcxClientWithOpt
 		rpcx.WithUseConsulRegistry(r.useConsulRegistry),
 		rpcx.WithConsulServers(r.consulServers...),
 		rpcx.WithServiceName(serviceName),
+		rpcx.WithClientName(r.serviceName),
 		rpcx.WithOpenTracing(r.openTracing),
 		rpcx.WithJeagerAgentHostPort(r.trackAgentHostPort),
 	)

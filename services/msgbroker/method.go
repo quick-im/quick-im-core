@@ -2,16 +2,48 @@ package msgbroker
 
 import (
 	"context"
+	"fmt"
 	"net"
 
+	"github.com/quick-im/quick-im-core/internal/codec"
+	"github.com/quick-im/quick-im-core/internal/contant"
+	"github.com/quick-im/quick-im-core/internal/helper"
+	"github.com/quick-im/quick-im-core/internal/msgdb/model"
 	"github.com/quick-im/quick-im-core/internal/quickparam/msgbroker"
+	"github.com/quick-im/quick-im-core/internal/rpcx"
+	"github.com/quick-im/quick-im-core/services/conversation"
 	"github.com/smallnest/rpcx/server"
 )
 
 type BroadcastRecvFn func(context.Context, msgbroker.BroadcastArgs, *msgbroker.BroadcastReply) error
 
 func (r *rpcxServer) BroadcastRecv(ctx context.Context) BroadcastRecvFn {
-	return func(ctx context.Context, ba msgbroker.BroadcastArgs, br *msgbroker.BroadcastReply) error {
+	var c codec.GobUtils[model.Msg]
+	var conversationService *rpcx.RpcxClientWithOpt
+	conversationService = helper.GetCtxValue(ctx, contant.CTX_SERVICE_CONVERSATION, conversationService)
+	return func(ctx context.Context, args msgbroker.BroadcastArgs, reply *msgbroker.BroadcastReply) error {
+		getSessionsArgs := conversation.GetConversationSessionsArgs{
+			ConversationId: args.ConversationID,
+		}
+		getSessionsReply := conversation.GetConversationSessionsReply{}
+		err := conversationService.Call(ctx, conversation.SERVICE_GET_CONVERSATION_SSESSIONS, getSessionsArgs, &getSessionsReply)
+		if err != nil {
+			r.logger.Error("BroadcastRecv Call Service: conversationService Method: SERVICE_GET_CONVERSATION_SSESSIONS failed,", fmt.Sprintf("args: %#v,err: %v", args, err))
+			return err
+		}
+		msg := model.Msg(args)
+		data, err := c.Encode(msg)
+		if err != nil {
+			r.logger.Error("BroadcastRecv Msg EncodeErr:", fmt.Sprintf("args: %#v,err: %v", data, err))
+			return err
+		}
+		for i := range getSessionsReply.Sessions {
+			if c, exist := r.connList[getSessionsReply.Sessions[i]]; exist {
+				if _, err := c.Conn.Write(data); err != nil {
+					r.logger.Error("BroadcastRecv Send Msg To Session Err:", fmt.Sprintf("conm: %#v,err: %v", c, err))
+				}
+			}
+		}
 		return nil
 	}
 }
