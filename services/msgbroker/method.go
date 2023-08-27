@@ -9,19 +9,18 @@ import (
 	"github.com/quick-im/quick-im-core/internal/contant"
 	"github.com/quick-im/quick-im-core/internal/helper"
 	"github.com/quick-im/quick-im-core/internal/msgdb/model"
-	"github.com/quick-im/quick-im-core/internal/quickparam/msgbroker"
 	"github.com/quick-im/quick-im-core/internal/rpcx"
 	"github.com/quick-im/quick-im-core/services/conversation"
 	"github.com/smallnest/rpcx/server"
 )
 
-type broadcastRecvFn func(context.Context, msgbroker.BroadcastArgs, *msgbroker.BroadcastReply) error
+type broadcastRecvFn func(context.Context, BroadcastArgs, *BroadcastReply) error
 
 func (r *rpcxServer) BroadcastRecv(ctx context.Context) broadcastRecvFn {
-	var c codec.GobUtils[model.Msg]
+	var c codec.GobUtils[BroadcastMsgWarp]
 	var conversationService *rpcx.RpcxClientWithOpt
 	conversationService = helper.GetCtxValue(ctx, contant.CTX_SERVICE_CONVERSATION, conversationService)
-	return func(ctx context.Context, args msgbroker.BroadcastArgs, reply *msgbroker.BroadcastReply) error {
+	return func(ctx context.Context, args BroadcastArgs, reply *BroadcastReply) error {
 		getSessionsArgs := conversation.GetConversationSessionsArgs{
 			ConversationId: args.ConversationID,
 		}
@@ -32,11 +31,6 @@ func (r *rpcxServer) BroadcastRecv(ctx context.Context) broadcastRecvFn {
 			return err
 		}
 		msg := model.Msg(args)
-		data, err := c.Encode(msg)
-		if err != nil {
-			r.logger.Error("BroadcastRecv Msg EncodeErr:", fmt.Sprintf("args: %#v,err: %v", data, err))
-			return err
-		}
 		// r.connList.lock.RLock()
 		// for i := range getSessionsReply.Sessions {
 		// 	if c, exist := r.connList.connMap[getSessionsReply.Sessions[i]]; exist {
@@ -50,33 +44,57 @@ func (r *rpcxServer) BroadcastRecv(ctx context.Context) broadcastRecvFn {
 		// r.connList.lock.RUnlock()
 		// fix
 		// 向该客户端连接的节点发送消息，再由节点发送给具体session
+		recvSessions := BroadcastMsgWarp{
+			Action:     SendMsg,
+			MetaData:   msg,
+			ToSessions: []RecvSession{},
+		}
+		sendMaps := map[string][]RecvSession{}
 		r.clientList.lock.RLock()
+		defer r.clientList.lock.RUnlock()
 		for i := range getSessionsReply.Sessions {
 			if platforms, exist := r.clientList.sessonIndex[getSessionsReply.Sessions[i]]; exist {
 				//TODO: 这里的data要包装一下，告诉client发送给具体的session
 				for platform, gatewayUuid := range platforms {
-					_ = platform
-					if err := r.rpcxSer.SendMessage(r.clientList.client[gatewayUuid].conn, SERVER_NAME, SERVICE_BROADCAST_RECV, nil, data); err != nil {
-						r.logger.Error("BroadcastRecv Send Msg To Session Err:", fmt.Sprintf("session: %s, err: %v", getSessionsReply.Sessions[i], err))
-						return err
+					if sendMaps[gatewayUuid] == nil {
+						sendMaps[gatewayUuid] = make([]RecvSession, 0)
 					}
+					sendMaps[gatewayUuid] = append(sendMaps[gatewayUuid], RecvSession{
+						SessionId: getSessionsReply.Sessions[i],
+						Platform:  platform,
+					})
+					// _ = platform
+					// if err := r.rpcxSer.SendMessage(r.clientList.client[gatewayUuid].conn, SERVER_NAME, SERVICE_BROADCAST_RECV, nil, data); err != nil {
+					// 	r.logger.Error("BroadcastRecv Send Msg To Session Err:", fmt.Sprintf("session: %s, err: %v", getSessionsReply.Sessions[i], err))
+					// 	return err
+					// }
 				}
 			}
 		}
-		r.clientList.lock.RUnlock()
+		// 将消息收集统一发送，减少数据包传输数量
+		for gatewayUuid := range sendMaps {
+			recvSessions.ToSessions = sendMaps[gatewayUuid]
+			data, err := c.Encode(recvSessions)
+			if err != nil {
+				r.logger.Error("BroadcastRecv Encode failed,", fmt.Sprintf("args: %#v, err: %v", recvSessions, err))
+				return err
+			}
+			if err := r.rpcxSer.SendMessage(r.clientList.client[gatewayUuid].conn, SERVER_NAME, SERVICE_BROADCAST_RECV, nil, data); err != nil {
+				r.logger.Error("Msgbroker Send Msg To Session Err:", fmt.Sprintf("gatewayUuid: %s, gatewayAddr: %s, err: %v", gatewayUuid, r.clientList.client[gatewayUuid].conn.RemoteAddr().String(), err))
+			}
+		}
 		//
 		return nil
 	}
 }
 
-type registerSessionFn func(context.Context, msgbroker.RegisterSessionInfo, *msgbroker.RegisterSessionReply) error
+type registerSessionFn func(context.Context, RegisterSessionInfo, *RegisterSessionReply) error
 
 // 注册之前先发送广播踢掉同用户同平台的其他连接
 func (r *rpcxServer) RegisterSession(ctx context.Context) registerSessionFn {
-	// var c codec.GobUtils[model.Msg]
 	var selfService *rpcx.RpcxClientWithOpt
 	selfService = helper.GetCtxValue(ctx, contant.CTX_SERVICE_MSGBORKER, selfService)
-	return func(ctx context.Context, args msgbroker.RegisterSessionInfo, reply *msgbroker.RegisterSessionReply) error {
+	return func(ctx context.Context, args RegisterSessionInfo, reply *RegisterSessionReply) error {
 		clientConn := ctx.Value(server.RemoteConnContextKey).(net.Conn)
 		// args.PlatformConn = make(map[uint8]net.Conn)
 		// 发送广播，踢掉其他重复的连接
@@ -98,7 +116,9 @@ func (r *rpcxServer) RegisterSession(ctx context.Context) registerSessionFn {
 		// }
 		// r.connList.lock.Unlock()
 		// fix
+
 		r.clientList.lock.Lock()
+		defer r.clientList.lock.Unlock()
 		if _, ok := r.clientList.client[args.GatewayUuid]; ok {
 			// platforms := r.clientList.client[clientAddr].connMap[args.SessionId]
 			// 如果session存在该节点则直接注册
@@ -122,7 +142,6 @@ func (r *rpcxServer) RegisterSession(ctx context.Context) registerSessionFn {
 			// println("register ok")
 			// println(r.clientList.sessonIndex[args.SessionId][args.Platform])
 		}
-		r.clientList.lock.Unlock()
 		//
 		return nil
 	}
@@ -131,7 +150,8 @@ func (r *rpcxServer) RegisterSession(ctx context.Context) registerSessionFn {
 type kickoutDuplicateFn = registerSessionFn
 
 func (r *rpcxServer) KickoutDuplicate(ctx context.Context) kickoutDuplicateFn {
-	return func(ctx context.Context, rsi msgbroker.RegisterSessionInfo, rsr *msgbroker.RegisterSessionReply) error {
+	var c codec.GobUtils[BroadcastMsgWarp]
+	return func(ctx context.Context, rsi RegisterSessionInfo, rsr *RegisterSessionReply) error {
 		// println("kictout")
 		// if info, ok := r.connList.connMap[rsi.SessionId]; ok {
 		// 	r.connList.lock.RLock()
@@ -145,6 +165,7 @@ func (r *rpcxServer) KickoutDuplicate(ctx context.Context) kickoutDuplicateFn {
 		// }
 		// fix
 		r.clientList.lock.Lock()
+		defer r.clientList.lock.Unlock()
 		if platforms, ok := r.clientList.sessonIndex[rsi.SessionId]; ok {
 			needDelete := false
 			for platform, gatewayUuid := range platforms {
@@ -161,7 +182,20 @@ func (r *rpcxServer) KickoutDuplicate(ctx context.Context) kickoutDuplicateFn {
 					needDelete = true
 					// println("这里踢出客户端")
 					//TODO: 这里的data要包装一下，告诉client发送给具体的session
-					_ = r.rpcxSer.SendMessage(r.clientList.client[gatewayUuid].conn, SERVER_NAME, SERVICE_KICKOUT_DUPLICATE, nil, []byte("kickout"))
+					msg := BroadcastMsgWarp{
+						Action: Kickout,
+						ToSessions: []RecvSession{
+							{
+								SessionId: rsi.SessionId,
+								Platform:  rsi.Platform,
+							},
+						},
+					}
+					data, err := c.Encode(msg)
+					if err != nil {
+						r.logger.Error("KickoutDuplicate Encode Data failed: ", fmt.Sprintf("Args: %#v, err: %v", msg, err))
+					}
+					_ = r.rpcxSer.SendMessage(r.clientList.client[gatewayUuid].conn, SERVER_NAME, SERVICE_KICKOUT_DUPLICATE, nil, data)
 					// 直接跳出处理，因为不该有第二个同用户的同平台在节点中，这是个bug
 					break
 				}
@@ -176,7 +210,6 @@ func (r *rpcxServer) KickoutDuplicate(ctx context.Context) kickoutDuplicateFn {
 				}
 			}
 		}
-		r.clientList.lock.Unlock()
 		//
 		return nil
 	}

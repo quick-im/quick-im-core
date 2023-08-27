@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/quick-im/quick-im-core/internal/quickparam/msghub"
+	"github.com/quick-im/quick-im-core/services/msghub"
 	ser "github.com/quick-im/quick-im-core/services/msghub"
 	"github.com/smallnest/rpcx/client"
 )

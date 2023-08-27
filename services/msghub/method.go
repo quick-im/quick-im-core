@@ -9,14 +9,12 @@ import (
 	"github.com/quick-im/quick-im-core/internal/contant"
 	"github.com/quick-im/quick-im-core/internal/helper"
 	"github.com/quick-im/quick-im-core/internal/msgdb/model"
-	mbp "github.com/quick-im/quick-im-core/internal/quickparam/msgbroker"
-	"github.com/quick-im/quick-im-core/internal/quickparam/msghub"
 	"github.com/quick-im/quick-im-core/internal/rpcx"
 	"github.com/quick-im/quick-im-core/services/msgbroker"
 	"github.com/quick-im/quick-im-core/services/persistence"
 )
 
-type sendMsgFn func(context.Context, msghub.SendMsgArgs, *msghub.SendMsgReply) error
+type sendMsgFn func(context.Context, SendMsgArgs, *SendMsgReply) error
 
 func (r *rpcxServer) SendMsg(ctx context.Context) sendMsgFn {
 	//TODO: 通过nats进行消息分发
@@ -32,7 +30,7 @@ func (r *rpcxServer) SendMsg(ctx context.Context) sendMsgFn {
 	var msgbrokerService *rpcx.RpcxClientWithOpt
 	msgbrokerService = helper.GetCtxValue(ctx, contant.CTX_SERVICE_MSGBORKER, msgbrokerService)
 	gobc := codec.GobUtils[model.Msg]{}
-	return func(ctx context.Context, args msghub.SendMsgArgs, reply *msghub.SendMsgReply) error {
+	return func(ctx context.Context, args SendMsgArgs, reply *SendMsgReply) error {
 		broadcastArgs := model.Msg{
 			MsgId:          args.MsgId,
 			ConversationID: args.ConversationID,
@@ -72,7 +70,7 @@ func (r *rpcxServer) SendMsg(ctx context.Context) sendMsgFn {
 				Type:           args.MsgType,
 				Content:        string(args.Content),
 			}
-			err := msgbrokerService.Broadcast(ctx, msgbroker.SERVICE_BROADCAST_RECV, broadcastArgs, &mbp.BroadcastReply{})
+			err := msgbrokerService.Broadcast(ctx, msgbroker.SERVICE_BROADCAST_RECV, broadcastArgs, &msgbroker.BroadcastReply{})
 			if err != nil {
 				r.logger.Error("SendMsg: nats & rpcx call failed, failed to send message. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
 				return err

@@ -17,3 +17,21 @@ type RegisterSessionInfo struct {
 
 type RegisterSessionReply struct {
 }
+
+type Action uint8
+
+const (
+	SendMsg = 1
+	Kickout = 2
+)
+
+type BroadcastMsgWarp struct {
+	Action     Action
+	MetaData   model.Msg
+	ToSessions []RecvSession
+}
+
+type RecvSession struct {
+	SessionId string
+	Platform  uint8
+}

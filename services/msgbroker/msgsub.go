@@ -22,6 +22,7 @@ func (r *rpcxServer) listenMsg(ctx context.Context, nc *messaging.NatsWarp) {
 		panic(err)
 	}
 	var c codec.GobUtils[model.Msg]
+	var c2 codec.GobUtils[BroadcastMsgWarp]
 	var msgData model.Msg
 	var conversationService *rpcx.RpcxClientWithOpt
 	conversationService = helper.GetCtxValue(ctx, contant.CTX_SERVICE_CONVERSATION, conversationService)
@@ -52,19 +53,44 @@ func (r *rpcxServer) listenMsg(ctx context.Context, nc *messaging.NatsWarp) {
 		// }
 		// r.connList.lock.RUnlock()
 		// fix
+		// map[GatewayUuid]BroadcastMsgWarp
+		recvSessions := BroadcastMsgWarp{
+			Action:     SendMsg,
+			MetaData:   msgData,
+			ToSessions: []RecvSession{},
+		}
+		sendMaps := map[string][]RecvSession{}
 		r.clientList.lock.RLock()
+		defer r.clientList.lock.RUnlock()
 		for i := range getSessionsReply.Sessions {
 			if platforms, exist := r.clientList.sessonIndex[getSessionsReply.Sessions[i]]; exist {
 				//TODO: 这里的data要包装一下，告诉client发送给具体的session
 				for platform, gatewayUuid := range platforms {
-					_ = platform
-					if err := r.rpcxSer.SendMessage(r.clientList.client[gatewayUuid].conn, SERVER_NAME, SERVICE_BROADCAST_RECV, nil, msg.Data); err != nil {
-						r.logger.Error("Msgbroker Send Msg To Session Err:", fmt.Sprintf("session: %s, platform: %d, err: %v", getSessionsReply.Sessions[i], platform, err))
+					if sendMaps[gatewayUuid] == nil {
+						sendMaps[gatewayUuid] = make([]RecvSession, 0)
 					}
+					sendMaps[gatewayUuid] = append(sendMaps[gatewayUuid], RecvSession{
+						SessionId: getSessionsReply.Sessions[i],
+						Platform:  platform,
+					})
+					// if err := r.rpcxSer.SendMessage(r.clientList.client[gatewayUuid].conn, SERVER_NAME, SERVICE_BROADCAST_RECV, nil, msg.Data); err != nil {
+					// 	r.logger.Error("Msgbroker Send Msg To Session Err:", fmt.Sprintf("session: %s, platform: %d, err: %v", getSessionsReply.Sessions[i], platform, err))
+					// }
 				}
 			}
 		}
-		r.clientList.lock.RUnlock()
+		// 将消息收集统一发送，减少数据包传输数量
+		for gatewayUuid := range sendMaps {
+			recvSessions.ToSessions = sendMaps[gatewayUuid]
+			data, err := c2.Encode(recvSessions)
+			if err != nil {
+				r.logger.Error("MsgBroker listenMsg Encode failed,", fmt.Sprintf("args: %#v, err: %v", recvSessions, err))
+				return
+			}
+			if err := r.rpcxSer.SendMessage(r.clientList.client[gatewayUuid].conn, SERVER_NAME, SERVICE_BROADCAST_RECV, nil, data); err != nil {
+				r.logger.Error("Msgbroker Send Msg To Session Err:", fmt.Sprintf("gatewayUuid: %s, gatewayAddr: %s, err: %v", gatewayUuid, r.clientList.client[gatewayUuid].conn.RemoteAddr().String(), err))
+			}
+		}
 		//
 		_ = msg.Ack()
 	}, nats.DeliverNew())
