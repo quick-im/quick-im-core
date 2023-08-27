@@ -21,8 +21,9 @@ type RegisterSessionReply struct {
 type Action uint8
 
 const (
-	SendMsg = 1
-	Kickout = 2
+	SendMsg   = 1
+	Kickout   = 2
+	Heartbeat = 3
 )
 
 type BroadcastMsgWarp struct {

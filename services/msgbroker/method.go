@@ -81,6 +81,7 @@ func (r *rpcxServer) BroadcastRecv(ctx context.Context) broadcastRecvFn {
 			}
 			if err := r.rpcxSer.SendMessage(r.clientList.client[gatewayUuid].conn, SERVER_NAME, SERVICE_BROADCAST_RECV, nil, data); err != nil {
 				r.logger.Error("Msgbroker Send Msg To Session Err:", fmt.Sprintf("gatewayUuid: %s, gatewayAddr: %s, err: %v", gatewayUuid, r.clientList.client[gatewayUuid].conn.RemoteAddr().String(), err))
+				return err
 			}
 		}
 		//

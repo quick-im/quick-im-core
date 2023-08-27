@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/nats-io/nats.go"
+	"github.com/quick-im/quick-im-core/internal/codec"
 	"github.com/quick-im/quick-im-core/internal/config"
 	"github.com/quick-im/quick-im-core/internal/contant"
 	"github.com/quick-im/quick-im-core/internal/logger"
@@ -111,6 +112,7 @@ func (s *rpcxServer) Start(ctx context.Context) error {
 	ctx = context.WithValue(ctx, contant.CTX_SERVICE_MSGBORKER, selfService)
 	defer selfService.CloseAndShutdownTrace()
 	go s.listenMsg(ctx, nc)
+	go s.Heartbeat(time.Minute)
 	s.addRegistryPlugin(ser)
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_BROADCAST_RECV, s.BroadcastRecv(ctx), "")
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_REGISTER_SESSION, s.RegisterSession(ctx), "")
@@ -171,4 +173,54 @@ func (r *rpcxServer) InitDepServices(serviceName string) *rpcx.RpcxClientWithOpt
 		r.logger.Fatal("init dep err", fmt.Sprintf("serviceName: %s , Err: %v", serviceName, err))
 	}
 	return service
+}
+
+func (s *rpcxServer) Heartbeat(duration time.Duration) {
+	ticker := time.NewTicker(duration)
+	defer ticker.Stop()
+	c := codec.GobUtils[BroadcastMsgWarp]{}
+	heartbeatData, err := c.Encode(BroadcastMsgWarp{
+		Action: Heartbeat,
+	})
+	if err != nil {
+		panic(err)
+	}
+	for range ticker.C {
+		gateways := map[string]clientInfo{}
+		s.clientList.lock.RLock()
+		for gatewayUuid := range s.clientList.client {
+			gateways[gatewayUuid] = s.clientList.client[gatewayUuid]
+		}
+		s.clientList.lock.RUnlock()
+		// map[gateway]map[sessioId]map[platform]
+		needGC := map[string]map[string]map[uint8]struct{}{}
+		for gatewayUuid := range gateways {
+			if err := s.rpcxSer.SendMessage(gateways[gatewayUuid].conn, SERVER_NAME, SERVICE_BROADCAST_RECV, nil, heartbeatData); err != nil {
+				s.logger.Error("Heartbeat Err:", fmt.Sprintf("gatewayUuid: %s, gatewayAddr: %s, err: %v", gatewayUuid, gateways[gatewayUuid].conn.RemoteAddr().String(), err))
+				needGC[gatewayUuid] = gateways[gatewayUuid].connMap
+			}
+		}
+		if len(needGC) > 0 {
+			s.clientList.lock.Lock()
+			for gatewayId := range needGC {
+				for sessionId := range needGC[gatewayId] {
+					for platform := range needGC[gatewayId][sessionId] {
+						// 先检查key是否存在，防止其他地方清理之后导致的panic
+						if _, sessionOk := s.clientList.sessonIndex[sessionId]; sessionOk {
+							if g, platformOk := s.clientList.sessonIndex[sessionId][platform]; platformOk && g == gatewayId {
+								if len(s.clientList.sessonIndex[sessionId]) == 1 {
+									delete(s.clientList.sessonIndex, sessionId)
+								} else {
+									delete(s.clientList.sessonIndex[sessionId], platform)
+								}
+							}
+							// 如果当前session在线平台只有一个且和需要清理的平台匹配，则直接删除这个session索引
+						}
+					}
+				}
+				delete(s.clientList.client, gatewayId)
+			}
+			s.clientList.lock.Unlock()
+		}
+	}
 }
