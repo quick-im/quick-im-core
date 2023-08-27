@@ -22,15 +22,26 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-type connList struct {
-	lock    sync.RWMutex
-	connMap map[string]connInfo
+// type connList struct {
+// 	lock    sync.RWMutex
+// 	connMap map[string]connInfo
+// }
+
+// type connInfo struct {
+// 	PlatformConn map[uint8]net.Conn
+// 	Uid          string
+// 	SessionId    string
+// }
+
+type clientList struct {
+	lock        sync.RWMutex
+	sessonIndex map[string]string
+	client      map[string]clientInfo
 }
 
-type connInfo struct {
-	PlatformConn map[uint8]net.Conn
-	Uid          string
-	SessionId    string
+type clientInfo struct {
+	conn    net.Conn
+	connMap map[string]map[uint8]struct{}
 }
 
 type rpcxServer struct {
@@ -44,7 +55,8 @@ type rpcxServer struct {
 	natsServers         []string
 	natsEnableJetstream bool
 	logger              logger.Logger
-	connList            connList
+	// connList            connList
+	clientList clientList
 }
 
 func NewServer(opts ...Option) *rpcxServer {
@@ -53,9 +65,14 @@ func NewServer(opts ...Option) *rpcxServer {
 		natsServers:         make([]string, 0),
 		natsEnableJetstream: true,
 		serviceName:         SERVER_NAME,
-		connList: connList{
-			lock:    sync.RWMutex{},
-			connMap: make(map[string]connInfo, 100),
+		// connList: connList{
+		// 	lock:    sync.RWMutex{},
+		// 	connMap: make(map[string]connInfo, 100),
+		// },
+		clientList: clientList{
+			lock:        sync.RWMutex{},
+			sessonIndex: map[string]string{},
+			client:      map[string]clientInfo{},
 		},
 	}
 	for i := range opts {

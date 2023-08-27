@@ -40,17 +40,29 @@ func (r *rpcxServer) listenMsg(ctx context.Context, nc *messaging.NatsWarp) {
 			r.logger.Error("MsgBroker Call Service: conversationService Method: SERVICE_GET_CONVERSATION_SSESSIONS failed,", fmt.Sprintf("args: %#v,err: %v", msgData, err))
 			return
 		}
-		r.connList.lock.RLock()
+		// r.connList.lock.RLock()
+		// for i := range getSessionsReply.Sessions {
+		// 	if c, exist := r.connList.connMap[getSessionsReply.Sessions[i]]; exist {
+		// 		for platform := range c.PlatformConn {
+		// 			if _, err := c.PlatformConn[platform].Write(msg.Data); err != nil {
+		// 				r.logger.Error("MsgBroker Send Msg To Session Err:", fmt.Sprintf("session: %s, platform: %d, err: %v", getSessionsReply.Sessions[i], platform, err))
+		// 			}
+		// 		}
+		// 	}
+		// }
+		// r.connList.lock.RUnlock()
+		// fix
+		r.clientList.lock.RLock()
 		for i := range getSessionsReply.Sessions {
-			if c, exist := r.connList.connMap[getSessionsReply.Sessions[i]]; exist {
-				for platform := range c.PlatformConn {
-					if _, err := c.PlatformConn[platform].Write(msg.Data); err != nil {
-						r.logger.Error("MsgBroker Send Msg To Session Err:", fmt.Sprintf("session: %s, platform: %d, err: %v", getSessionsReply.Sessions[i], platform, err))
-					}
+			if clientAddr, exist := r.clientList.sessonIndex[getSessionsReply.Sessions[i]]; exist {
+				//TODO: 这里的data要包装一下，告诉client发送给具体的session
+				if _, err := r.clientList.client[clientAddr].conn.Write(msg.Data); err != nil {
+					r.logger.Error("BroadcastRecv Send Msg To Session Err:", fmt.Sprintf("session: %s, err: %v", getSessionsReply.Sessions[i], err))
 				}
 			}
 		}
-		r.connList.lock.RUnlock()
+		r.clientList.lock.RUnlock()
+		//
 		_ = msg.Ack()
 	}, nats.DeliverNew())
 	if err != nil {
