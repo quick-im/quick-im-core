@@ -14,7 +14,7 @@ import (
 	"github.com/quick-im/quick-im-core/internal/msgdb/model"
 )
 
-// 用于更新会话状态
+// 用于更新会话状态,这里最好不要做成异步操作
 func (r *rpcxServer) listenMsg(ctx context.Context, nc *messaging.NatsWarp) {
 	var ctxDb contant.PgCtxType
 	ctxDb = helper.GetCtxValue(ctx, contant.CTX_POSTGRES_KEY, ctxDb)

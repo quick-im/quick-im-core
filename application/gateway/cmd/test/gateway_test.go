@@ -25,7 +25,7 @@ func TestRecvMsg(t *testing.T) {
 	args := msgbroker.RegisterSessionInfo{
 		Platform:    0,
 		GatewayUuid: gatewayUuid,
-		SessionId:   "1",
+		SessionId:   "50864896-8136-4a43-8a48-1d3325a7f78f",
 	}
 	reply := &msgbroker.RegisterSessionReply{}
 
@@ -33,7 +33,7 @@ func TestRecvMsg(t *testing.T) {
 		t.Error(err)
 	}
 	for msg := range ch {
-		fmt.Printf("receive msg from server: %s\n", msg.Payload)
+		// fmt.Printf("receive msg from server: %s\n", msg.Payload)
 		c.Decode(msg.Payload, &msgData)
 		fmt.Printf("receive msg from server and decode: %#v\n", msgData)
 	}

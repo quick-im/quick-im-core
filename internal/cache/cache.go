@@ -7,4 +7,5 @@ type Cache interface {
 	CountConversationSessions(conversation string) (int64, error)
 	IsExistsInConversation(conversation, session string) (bool, error)
 	GetConversationSessions(conversation string) ([]string, error)
+	KeyExistInCache(key string) (bool, error)
 }

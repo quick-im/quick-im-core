@@ -358,8 +358,11 @@ func (r *rpcxServer) GetConversationSessions(ctx context.Context) GetConversatio
 	cacheDb = helper.GetCtxValue(ctx, contant.CTX_CACHE_DB_KEY, cacheDb)
 	return func(ctx context.Context, args GetConversationSessionsArgs, reply *GetConversationSessionsReply) error {
 		sessions, err := cacheDb.GetConversationSessions(args.ConversationId)
-		if err != nil {
-			r.logger.Error("GetConversationSessions cacheDb.GetConversationSessions Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+		if len(sessions) == 0 {
+			if err != nil {
+				r.logger.Error("GetConversationSessions cacheDb.GetConversationSessions Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			}
+			// TODO: 这里有缓存穿透风险
 			ids, err := dbObj.GetConversationsAllUsers(ctx)
 			if err != nil {
 				r.logger.Error("GetConversationSessions dbObj.GetConversationsAllUsers Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))

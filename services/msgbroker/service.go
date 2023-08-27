@@ -196,7 +196,7 @@ func (s *rpcxServer) Heartbeat(duration time.Duration) {
 		needGC := map[string]map[string]map[uint8]struct{}{}
 		for gatewayUuid := range gateways {
 			if err := s.rpcxSer.SendMessage(gateways[gatewayUuid].conn, SERVER_NAME, SERVICE_BROADCAST_RECV, nil, heartbeatData); err != nil {
-				s.logger.Error("Heartbeat Err:", fmt.Sprintf("gatewayUuid: %s, gatewayAddr: %s, err: %v", gatewayUuid, gateways[gatewayUuid].conn.RemoteAddr().String(), err))
+				// s.logger.Error("Heartbeat Err:", fmt.Sprintf("gatewayUuid: %s, gatewayAddr: %s, err: %v", gatewayUuid, gateways[gatewayUuid].conn.RemoteAddr().String(), err))
 				needGC[gatewayUuid] = gateways[gatewayUuid].connMap
 			}
 		}

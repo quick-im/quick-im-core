@@ -33,3 +33,15 @@ func (a *adapter) IsExistsInConversation(conversation, session string) (bool, er
 func (a *adapter) GetConversationSessions(conversation string) ([]string, error) {
 	return a.SMembers(context.Background(), conversation).Result()
 }
+
+func (a *adapter) KeyExistInCache(key string) (bool, error) {
+	var exist bool = false
+	val, err := a.Exists(context.Background(), key).Result()
+	if err != nil {
+		return exist, err
+	}
+	if val != 0 {
+		exist = true
+	}
+	return exist, nil
+}
