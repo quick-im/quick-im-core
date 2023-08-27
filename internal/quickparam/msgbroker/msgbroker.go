@@ -12,10 +12,10 @@ type BroadcastReply struct {
 }
 
 type RegisterSessionInfo struct {
-	Platfotm  uint8
-	Conn      net.Conn
-	Uid       string
-	SessionId string
+	PlatformConn map[uint8]net.Conn
+	Platform     uint8
+	Uid          string
+	SessionId    string
 }
 
 type RegisterSessionReply struct {

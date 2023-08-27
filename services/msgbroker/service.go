@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
+	"sync"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -12,7 +14,6 @@ import (
 	"github.com/quick-im/quick-im-core/internal/logger"
 	"github.com/quick-im/quick-im-core/internal/logger/innerzap"
 	"github.com/quick-im/quick-im-core/internal/messaging"
-	"github.com/quick-im/quick-im-core/internal/quickparam/msgbroker"
 	"github.com/quick-im/quick-im-core/internal/rpcx"
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
 	"github.com/quick-im/quick-im-core/services/conversation"
@@ -20,6 +21,17 @@ import (
 	"github.com/smallnest/rpcx/server"
 	"go.uber.org/zap/zapcore"
 )
+
+type connList struct {
+	lock    sync.RWMutex
+	connMap map[string]connInfo
+}
+
+type connInfo struct {
+	PlatformConn map[uint8]net.Conn
+	Uid          string
+	SessionId    string
+}
 
 type rpcxServer struct {
 	ip                  string
@@ -32,7 +44,7 @@ type rpcxServer struct {
 	natsServers         []string
 	natsEnableJetstream bool
 	logger              logger.Logger
-	connList            map[string]msgbroker.RegisterSessionInfo
+	connList            connList
 }
 
 func NewServer(opts ...Option) *rpcxServer {
@@ -41,7 +53,10 @@ func NewServer(opts ...Option) *rpcxServer {
 		natsServers:         make([]string, 0),
 		natsEnableJetstream: true,
 		serviceName:         SERVER_NAME,
-		connList:            make(map[string]msgbroker.RegisterSessionInfo, 100),
+		connList: connList{
+			lock:    sync.RWMutex{},
+			connMap: make(map[string]connInfo, 100),
+		},
 	}
 	for i := range opts {
 		opts[i](ser)
@@ -70,9 +85,14 @@ func (s *rpcxServer) Start(ctx context.Context) error {
 	conversationService := s.InitDepServices(conversation.SERVER_NAME)
 	ctx = context.WithValue(ctx, contant.CTX_SERVICE_CONVERSATION, conversationService)
 	defer conversationService.CloseAndShutdownTrace()
+	selfService := s.InitDepServices(SERVER_NAME)
+	ctx = context.WithValue(ctx, contant.CTX_SERVICE_MSGBORKER, selfService)
+	defer selfService.CloseAndShutdownTrace()
 	go s.listenMsg(ctx, nc)
 	s.addRegistryPlugin(ser)
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_BROADCAST_RECV, s.BroadcastRecv(ctx), "")
+	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_REGISTER_SESSION, s.RegisterSession(ctx), "")
+	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_KICKOUT_DUPLICATE, s.KickoutDuplicate(ctx), "")
 	// s.logger.Info(s.serviceName, fmt.Sprintf("start at %s:%d", s.ip, s.port))
 	return ser.Serve("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
 }
