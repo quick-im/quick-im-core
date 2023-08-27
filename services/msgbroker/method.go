@@ -56,7 +56,7 @@ func (r *rpcxServer) BroadcastRecv(ctx context.Context) broadcastRecvFn {
 				//TODO: 这里的data要包装一下，告诉client发送给具体的session
 				for platform, gatewayUuid := range platforms {
 					_ = platform
-					if _, err := r.clientList.client[gatewayUuid].conn.Write(data); err != nil {
+					if err := r.rpcxSer.SendMessage(r.clientList.client[gatewayUuid].conn, SERVER_NAME, SERVICE_BROADCAST_RECV, nil, data); err != nil {
 						r.logger.Error("BroadcastRecv Send Msg To Session Err:", fmt.Sprintf("session: %s, err: %v", getSessionsReply.Sessions[i], err))
 						return err
 					}
@@ -80,7 +80,7 @@ func (r *rpcxServer) RegisterSession(ctx context.Context) registerSessionFn {
 		clientConn := ctx.Value(server.RemoteConnContextKey).(net.Conn)
 		// args.PlatformConn = make(map[uint8]net.Conn)
 		// 发送广播，踢掉其他重复的连接
-		selfService.Broadcast(ctx, SERVICE_KICKOUT_DUPLICATE, args, reply)
+		_ = selfService.Broadcast(ctx, SERVICE_KICKOUT_DUPLICATE, args, reply)
 		// r.connList.lock.Lock()
 		// if info, ok := r.connList.connMap[args.SessionId]; ok {
 		// 	if info.PlatformConn == nil {
@@ -114,7 +114,13 @@ func (r *rpcxServer) RegisterSession(ctx context.Context) registerSessionFn {
 				},
 			}
 			// 保存session && platform和网关的关联
+			if r.clientList.sessonIndex[args.SessionId] == nil {
+				// 初始化map
+				r.clientList.sessonIndex[args.SessionId] = make(map[uint8]string)
+			}
 			r.clientList.sessonIndex[args.SessionId][args.Platform] = args.GatewayUuid
+			// println("register ok")
+			// println(r.clientList.sessonIndex[args.SessionId][args.Platform])
 		}
 		r.clientList.lock.Unlock()
 		//
@@ -126,6 +132,7 @@ type kickoutDuplicateFn = registerSessionFn
 
 func (r *rpcxServer) KickoutDuplicate(ctx context.Context) kickoutDuplicateFn {
 	return func(ctx context.Context, rsi msgbroker.RegisterSessionInfo, rsr *msgbroker.RegisterSessionReply) error {
+		// println("kictout")
 		// if info, ok := r.connList.connMap[rsi.SessionId]; ok {
 		// 	r.connList.lock.RLock()
 		// 	if info.PlatformConn == nil {
@@ -152,14 +159,15 @@ func (r *rpcxServer) KickoutDuplicate(ctx context.Context) kickoutDuplicateFn {
 						delete(r.clientList.client[gatewayUuid].connMap[rsi.SessionId], rsi.Platform)
 					}
 					needDelete = true
-					println("这里踢出客户端")
+					// println("这里踢出客户端")
 					//TODO: 这里的data要包装一下，告诉client发送给具体的session
-					_, _ = r.clientList.client[gatewayUuid].conn.Write([]byte("踢出"))
+					_ = r.rpcxSer.SendMessage(r.clientList.client[gatewayUuid].conn, SERVER_NAME, SERVICE_KICKOUT_DUPLICATE, nil, []byte("kickout"))
 					// 直接跳出处理，因为不该有第二个同用户的同平台在节点中，这是个bug
 					break
 				}
 			}
 			if needDelete {
+				// 索引处理 {SessionIndex}
 				// 如果该session只有一个platform在该msgbroker节点，则直接删除session索引,否则只删除对应platform
 				if len(r.clientList.sessonIndex[rsi.SessionId]) == 1 {
 					delete(r.clientList.sessonIndex, rsi.SessionId)

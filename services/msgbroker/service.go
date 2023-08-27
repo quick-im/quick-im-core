@@ -48,6 +48,7 @@ type clientInfo struct {
 }
 
 type rpcxServer struct {
+	rpcxSer             *server.Server
 	ip                  string
 	port                uint16
 	openTracing         bool
@@ -95,6 +96,7 @@ func NewServer(opts ...Option) *rpcxServer {
 
 func (s *rpcxServer) Start(ctx context.Context) error {
 	ser := server.NewServer()
+	s.rpcxSer = ser
 	nc := s.InitNats()
 	defer nc.Close()
 	// 在服务端添加 Jaeger 拦截器
