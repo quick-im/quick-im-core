@@ -11,6 +11,7 @@ import (
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
 	cclient "github.com/rpcxio/rpcx-consul/client"
 	"github.com/smallnest/rpcx/client"
+	"github.com/smallnest/rpcx/share"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/trace"
 )
@@ -27,6 +28,11 @@ type RpcxClientWithOpt struct {
 	tracePtr                 *trace.TracerProvider
 	xclient                  client.XClient
 	ctx                      context.Context
+}
+
+type metaDataWarp struct {
+	key string
+	val string
 }
 
 type ctxInitInner string
@@ -87,6 +93,13 @@ func WithConsulServers(servers ...string) rpcxOption {
 	}
 }
 
+func WithMetaData(key, val string) metaDataWarp {
+	return metaDataWarp{
+		key: key,
+		val: val,
+	}
+}
+
 func NewClient(opts ...rpcxOption) (*RpcxClientWithOpt, error) {
 	c := &RpcxClientWithOpt{
 		consulServers: make([]string, 0),
@@ -144,19 +157,29 @@ func (s *RpcxClientWithOpt) CloseAndShutdownTrace() error {
 	return err
 }
 
-func (s *RpcxClientWithOpt) Call(ctx context.Context, serviceMethod string, arg interface{}, replay interface{}) error {
+func (s *RpcxClientWithOpt) Call(ctx context.Context, serviceMethod string, arg interface{}, replay interface{}, metadata ...metaDataWarp) error {
 	if s.ctx == nil {
 		s.ctx = ctx
 	}
+	meta := make(map[string]string, len(metadata))
+	for i := range metadata {
+		meta[metadata[i].key] = metadata[i].val
+	}
 	ctxInner := context.WithValue(s.ctx, ctxInitInner("initCtx"), nil)
+	ctxInner = context.WithValue(ctxInner, share.ReqMetaDataKey, meta)
 	return s.xclient.Call(ctxInner, serviceMethod, arg, replay)
 }
 
-func (s *RpcxClientWithOpt) Broadcast(ctx context.Context, serviceMethod string, arg interface{}, replay interface{}) error {
+func (s *RpcxClientWithOpt) Broadcast(ctx context.Context, serviceMethod string, arg interface{}, replay interface{}, metadata ...metaDataWarp) error {
 	if s.ctx == nil {
 		s.ctx = ctx
 	}
+	meta := make(map[string]string, len(metadata))
+	for i := range metadata {
+		meta[metadata[i].key] = meta[metadata[i].val]
+	}
 	ctxInner := context.WithValue(s.ctx, ctxInitInner("initCtx"), nil)
+	ctxInner = context.WithValue(ctxInner, share.ReqMetaDataKey, meta)
 	return s.xclient.Broadcast(ctxInner, serviceMethod, arg, replay)
 }
 

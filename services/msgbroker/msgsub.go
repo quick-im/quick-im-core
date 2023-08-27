@@ -54,10 +54,13 @@ func (r *rpcxServer) listenMsg(ctx context.Context, nc *messaging.NatsWarp) {
 		// fix
 		r.clientList.lock.RLock()
 		for i := range getSessionsReply.Sessions {
-			if clientAddr, exist := r.clientList.sessonIndex[getSessionsReply.Sessions[i]]; exist {
+			if platforms, exist := r.clientList.sessonIndex[getSessionsReply.Sessions[i]]; exist {
 				//TODO: 这里的data要包装一下，告诉client发送给具体的session
-				if _, err := r.clientList.client[clientAddr].conn.Write(msg.Data); err != nil {
-					r.logger.Error("BroadcastRecv Send Msg To Session Err:", fmt.Sprintf("session: %s, err: %v", getSessionsReply.Sessions[i], err))
+				for platform, gatewayUuid := range platforms {
+					_ = platform
+					if _, err := r.clientList.client[gatewayUuid].conn.Write(msg.Data); err != nil {
+						r.logger.Error("Msgbroker Send Msg To Session Err:", fmt.Sprintf("session: %s, platform: %d, err: %v", getSessionsReply.Sessions[i], platform, err))
+					}
 				}
 			}
 		}

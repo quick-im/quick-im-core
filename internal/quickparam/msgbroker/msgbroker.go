@@ -10,9 +10,9 @@ type BroadcastReply struct {
 }
 
 type RegisterSessionInfo struct {
-	Platform  uint8
-	Uid       string
-	SessionId string
+	Platform    uint8
+	GatewayUuid string
+	SessionId   string
 }
 
 type RegisterSessionReply struct {

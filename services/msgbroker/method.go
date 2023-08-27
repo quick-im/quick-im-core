@@ -52,10 +52,14 @@ func (r *rpcxServer) BroadcastRecv(ctx context.Context) broadcastRecvFn {
 		// 向该客户端连接的节点发送消息，再由节点发送给具体session
 		r.clientList.lock.RLock()
 		for i := range getSessionsReply.Sessions {
-			if clientAddr, exist := r.clientList.sessonIndex[getSessionsReply.Sessions[i]]; exist {
+			if platforms, exist := r.clientList.sessonIndex[getSessionsReply.Sessions[i]]; exist {
 				//TODO: 这里的data要包装一下，告诉client发送给具体的session
-				if _, err := r.clientList.client[clientAddr].conn.Write(data); err != nil {
-					r.logger.Error("BroadcastRecv Send Msg To Session Err:", fmt.Sprintf("session: %s, err: %v", getSessionsReply.Sessions[i], err))
+				for platform, gatewayUuid := range platforms {
+					_ = platform
+					if _, err := r.clientList.client[gatewayUuid].conn.Write(data); err != nil {
+						r.logger.Error("BroadcastRecv Send Msg To Session Err:", fmt.Sprintf("session: %s, err: %v", getSessionsReply.Sessions[i], err))
+						return err
+					}
 				}
 			}
 		}
@@ -95,13 +99,13 @@ func (r *rpcxServer) RegisterSession(ctx context.Context) registerSessionFn {
 		// r.connList.lock.Unlock()
 		// fix
 		r.clientList.lock.Lock()
-		if clientAddr, ok := r.clientList.sessonIndex[args.SessionId]; ok {
+		if _, ok := r.clientList.client[args.GatewayUuid]; ok {
 			// platforms := r.clientList.client[clientAddr].connMap[args.SessionId]
 			// 如果session存在该节点则直接注册
-			r.clientList.client[clientAddr].connMap[args.SessionId][args.Platform] = struct{}{}
+			r.clientList.client[args.GatewayUuid].connMap[args.SessionId][args.Platform] = struct{}{}
 		} else {
 			// 如果不存在则重新注册
-			r.clientList.client[clientAddr] = clientInfo{
+			r.clientList.client[args.GatewayUuid] = clientInfo{
 				conn: clientConn,
 				connMap: map[string]map[uint8]struct{}{
 					args.SessionId: {
@@ -109,8 +113,8 @@ func (r *rpcxServer) RegisterSession(ctx context.Context) registerSessionFn {
 					},
 				},
 			}
-			// 保存session和网关的关联
-			r.clientList.sessonIndex[args.SessionId] = clientAddr
+			// 保存session && platform和网关的关联
+			r.clientList.sessonIndex[args.SessionId][args.Platform] = args.GatewayUuid
 		}
 		r.clientList.lock.Unlock()
 		//
@@ -134,20 +138,34 @@ func (r *rpcxServer) KickoutDuplicate(ctx context.Context) kickoutDuplicateFn {
 		// }
 		// fix
 		r.clientList.lock.Lock()
-		if clientAddr, ok := r.clientList.sessonIndex[rsi.SessionId]; ok {
-			if _, exist := r.clientList.client[clientAddr].connMap[rsi.SessionId][rsi.Platform]; exist {
-				// 删除索引
-				if len(r.clientList.client[clientAddr].connMap[rsi.SessionId]) == 1 {
-					// 如果只有一个待删除平台在这个节点，则直接删除session
-					delete(r.clientList.client[clientAddr].connMap, rsi.SessionId)
-					delete(r.clientList.sessonIndex, clientAddr)
-				} else {
-					// 如果还有其他平台在这个节点，则只删除该平台
-					delete(r.clientList.client[clientAddr].connMap[rsi.SessionId], rsi.Platform)
+		if platforms, ok := r.clientList.sessonIndex[rsi.SessionId]; ok {
+			needDelete := false
+			for platform, gatewayUuid := range platforms {
+				if platform == rsi.Platform {
+					// 如果该平台已登录
+					// 删除索引
+					if len(r.clientList.client[gatewayUuid].connMap[rsi.SessionId]) == 1 {
+						// 如果只有一个待删除平台在这个节点，则直接删除session
+						delete(r.clientList.client[gatewayUuid].connMap, rsi.SessionId)
+					} else {
+						// 如果还有其他平台在这个client节点，则只删除该平台
+						delete(r.clientList.client[gatewayUuid].connMap[rsi.SessionId], rsi.Platform)
+					}
+					needDelete = true
+					println("这里踢出客户端")
+					//TODO: 这里的data要包装一下，告诉client发送给具体的session
+					_, _ = r.clientList.client[gatewayUuid].conn.Write([]byte("踢出"))
+					// 直接跳出处理，因为不该有第二个同用户的同平台在节点中，这是个bug
+					break
 				}
-				println("这里踢出客户端")
-				//TODO: 这里的data要包装一下，告诉client发送给具体的session
-				_, _ = r.clientList.client[clientAddr].conn.Write([]byte("踢出"))
+			}
+			if needDelete {
+				// 如果该session只有一个platform在该msgbroker节点，则直接删除session索引,否则只删除对应platform
+				if len(r.clientList.sessonIndex[rsi.SessionId]) == 1 {
+					delete(r.clientList.sessonIndex, rsi.SessionId)
+				} else {
+					delete(r.clientList.sessonIndex[rsi.SessionId], rsi.Platform)
+				}
 			}
 		}
 		r.clientList.lock.Unlock()

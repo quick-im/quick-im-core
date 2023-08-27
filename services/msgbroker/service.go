@@ -33,10 +33,13 @@ import (
 // 	SessionId    string
 // }
 
+// TODO: 考虑将clientAddr更换为网关节点的uuid，防止冲突
+
 type clientList struct {
-	lock        sync.RWMutex
-	sessonIndex map[string]string
-	client      map[string]clientInfo
+	lock sync.RWMutex
+	// 每个msgbroker可以接入若干gateway节点，同一个session不同platform可能接入不同gateway节点，所以这里做一下区分
+	sessonIndex map[string]map[uint8]string // map[{sessionId}][{platform}]{clientAddr=>uuid}
+	client      map[string]clientInfo       // map[{clientAddr=>uuid}]clientInfo
 }
 
 type clientInfo struct {
@@ -71,7 +74,7 @@ func NewServer(opts ...Option) *rpcxServer {
 		// },
 		clientList: clientList{
 			lock:        sync.RWMutex{},
-			sessonIndex: map[string]string{},
+			sessonIndex: map[string]map[uint8]string{},
 			client:      map[string]clientInfo{},
 		},
 	}

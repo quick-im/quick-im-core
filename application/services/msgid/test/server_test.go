@@ -70,7 +70,8 @@ func TestOptClient(t *testing.T) {
 		ConversationType: 3,
 	}
 	reply := &msgid.GenerateMessageIDReply{}
-	if err := c.Call(context.Background(), msgid.SERVICE_GENERATE_MESSAGE_ID, args, reply); err != nil {
+	ctx := context.Background()
+	if err := c.Call(ctx, msgid.SERVICE_GENERATE_MESSAGE_ID, args, reply, rpcx.WithMetaData("test", "haha")); err != nil {
 		t.Error(err)
 	}
 	t.Log(reply.MsgID)
