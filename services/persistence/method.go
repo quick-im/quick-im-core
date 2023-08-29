@@ -230,3 +230,50 @@ func (r *rpcxServer) GetThe30MsgAfterTheId(ctx context.Context) getThe30MsgAfter
 		return nil
 	}
 }
+
+// 获取会话最后一条消息
+type GetLastOneMsgFromDbArgs struct {
+	ConversationID string
+	Sort           contant.Sort
+}
+
+type GetLastOneMsgFromDbReply struct {
+	Msg []model.Msg
+}
+
+type getLastOneMsgFromDbFn func(context.Context, GetLastOneMsgFromDbArgs, *GetLastOneMsgFromDbReply) error
+
+func (r *rpcxServer) GetLastOneMsgFromDb(ctx context.Context) getLastOneMsgFromDbFn {
+	var rdb contant.RethinkDbCtxType
+	rdb = helper.GetCtxValue[contant.RethinkDbCtxType](ctx, contant.CTX_RETHINK_DB_KEY, rdb)
+	return func(ctx context.Context, args GetLastOneMsgFromDbArgs, reply *GetLastOneMsgFromDbReply) error {
+		var msgs []model.Msg
+		rows, err := rethinkdb.Table(config.RethinkMsgDb).
+			Filter(
+				rethinkdb.Row.Field("conversation_id").Eq(args.ConversationID),
+			).
+			OrderBy(rethinkdb.Desc(rethinkdb.Row.Field("msg_id"))).
+			Limit(1).
+			Run(rdb)
+		if err != nil {
+			r.logger.Error("GetLast30MsgFromDb rethinkdb.GetLast30MsgFromDb Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
+			return err
+		}
+		defer rows.Close()
+		if err := rows.All(&msgs); err != nil {
+			r.logger.Error("GetLast30MsgFromDb rethinkdb.Bind To Struct Err:", fmt.Sprintf("args: %+v, err: %v", args, err))
+			return err
+		}
+		if args.Sort == contant.Asc {
+			sort.Slice(msgs, func(i, j int) bool {
+				return msgs[i].MsgId < msgs[j].MsgId
+			})
+		} else {
+			sort.Slice(msgs, func(i, j int) bool {
+				return msgs[i].MsgId > msgs[j].MsgId
+			})
+		}
+		reply.Msg = msgs
+		return nil
+	}
+}

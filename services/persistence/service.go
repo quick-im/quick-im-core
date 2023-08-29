@@ -68,6 +68,7 @@ func (s *rpcxServer) Start(ctx context.Context) error {
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_GET_MSG_FROM_DB_IN_RANGE, s.GetMsgFromDbInRange(ctx), "")
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_GET_THE_30MSG_AFTER_THE_ID, s.GetThe30MsgAfterTheId(ctx), "")
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_GET_THE_30MSG_BEFORE_THE_ID, s.GetThe30MsgBeforeTheId(ctx), "")
+	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_GET_LASTONE_MSG, s.GetLastOneMsgFromDb(ctx), "")
 	return ser.Serve("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
 }
 

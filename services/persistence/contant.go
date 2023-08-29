@@ -7,4 +7,5 @@ const (
 	SERVICE_GET_LAST30_MSG_FROM_DB      = "GetLast30MsgFromDb"
 	SERVICE_GET_THE_30MSG_BEFORE_THE_ID = "GetThe30MsgBeforeTheId"
 	SERVICE_GET_THE_30MSG_AFTER_THE_ID  = "GetThe30MsgAfterTheId"
+	SERVICE_GET_LASTONE_MSG             = "GetLastOneMsgFromDb"
 )
