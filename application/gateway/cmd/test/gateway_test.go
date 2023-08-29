@@ -32,9 +32,12 @@ func TestRecvMsg(t *testing.T) {
 	if err := xclient.Call(context.Background(), msgbroker.SERVICE_REGISTER_SESSION, args, reply); err != nil {
 		t.Error(err)
 	}
+	var count = 0
 	for msg := range ch {
 		// fmt.Printf("receive msg from server: %s\n", msg.Payload)
 		c.Decode(msg.Payload, &msgData)
 		fmt.Printf("receive msg from server and decode: %#v\n", msgData)
+		count++
+		println(count)
 	}
 }

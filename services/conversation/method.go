@@ -3,6 +3,7 @@ package conversation
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -379,6 +380,39 @@ func (r *rpcxServer) GetConversationSessions(ctx context.Context) GetConversatio
 		}
 		if err := cacheDb.AddConverstaionSessions(args.ConversationId, reply.Sessions); err != nil {
 			r.logger.Error("GetConversationSessions cacheDb.AddConverstaionSessions Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+		}
+		return nil
+	}
+}
+
+// 更新session最后接收的消息
+type UpdateSessionLastRecvMsgArgs struct {
+	ConversationId string
+	LastRecvMsgId  string
+	Sessions       []string
+}
+
+type UpdateSessionLastRecvMsgReply struct {
+}
+
+type UpdateSessionLastRecvMsgFn func(context.Context, UpdateSessionLastRecvMsgArgs, *UpdateSessionLastRecvMsgReply) error
+
+func (r *rpcxServer) UpdateSessionLastRecvMsg(ctx context.Context) UpdateSessionLastRecvMsgFn {
+	var ctxDb contant.PgCtxType
+	ctxDb = helper.GetCtxValue(ctx, contant.CTX_POSTGRES_KEY, ctxDb)
+	dbObj := db.New(ctxDb)
+	return func(ctx context.Context, args UpdateSessionLastRecvMsgArgs, reply *UpdateSessionLastRecvMsgReply) error {
+		if len(args.Sessions) == 0 || args.ConversationId == "" || args.LastRecvMsgId == "" {
+			return nil
+		}
+		join_session := strings.Join(args.Sessions, ",")
+		if err := dbObj.UpdateSessionLastRecvMsg(ctx, db.UpdateSessionLastRecvMsgParams{
+			LastMsgID:      args.LastRecvMsgId,
+			ConversationID: args.ConversationId,
+			SessionID:      join_session,
+		}); err != nil {
+			r.logger.Error("UpdateSessionLastRecvMsg dbObj.UpdateSessionLastRecvMsg Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			return err
 		}
 		return nil
 	}

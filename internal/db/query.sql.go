@@ -333,7 +333,7 @@ type SessionJoinsConversationUseCopyFromParams struct {
 const updateConversationLastMsg = `-- name: UpdateConversationLastMsg :exec
 UPDATE public.conversations
 SET last_msg_id= $2::varchar, last_send_time=$1, last_send_session= $3::varchar
-WHERE conversation_id= $4::varchar
+WHERE conversation_id= $4::varchar AND last_msg_id < $2::varchar
 `
 
 type UpdateConversationLastMsgParams struct {
@@ -350,5 +350,22 @@ func (q *Queries) UpdateConversationLastMsg(ctx context.Context, arg UpdateConve
 		arg.LastSendSession,
 		arg.ConversationID,
 	)
+	return err
+}
+
+const updateSessionLastRecvMsg = `-- name: UpdateSessionLastRecvMsg :exec
+UPDATE public.conversation_session_id
+SET last_recv_msg_id= $1::varchar
+WHERE conversation_id= $2::varchar AND session_id IN ($3::varchar) AND last_recv_msg_id < $1::varchar
+`
+
+type UpdateSessionLastRecvMsgParams struct {
+	LastMsgID      string
+	ConversationID string
+	SessionID      string
+}
+
+func (q *Queries) UpdateSessionLastRecvMsg(ctx context.Context, arg UpdateSessionLastRecvMsgParams) error {
+	_, err := q.db.Exec(ctx, updateSessionLastRecvMsg, arg.LastMsgID, arg.ConversationID, arg.SessionID)
 	return err
 }

@@ -12,4 +12,5 @@ const (
 	SERVICE_ARCHIVE_CONVERSATIONS       = "SetArchiveConversations"
 	SERVICE_UPDATE_CONVERSATION_LASTMSG = "UpdateConversationLastMsg"
 	SERVICE_GET_CONVERSATION_SSESSIONS  = "GetConversationSessions"
+	SERVICE_UPDATE_SESSIONS_LAST_MSG    = "UpdateSessionLastRecvMsg"
 )
