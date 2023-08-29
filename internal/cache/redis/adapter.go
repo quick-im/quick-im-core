@@ -10,7 +10,7 @@ type adapter struct {
 	*redis.Client
 }
 
-func (a *adapter) AddConverstaionSessions(conversation string, sessions []string) error {
+func (a *adapter) AddConversationSessions(conversation string, sessions []string) error {
 	return a.SAdd(context.Background(), conversation, sessions).Err()
 }
 
@@ -44,4 +44,18 @@ func (a *adapter) KeyExistInCache(key string) (bool, error) {
 		exist = true
 	}
 	return exist, nil
+}
+
+func (a *adapter) SyncConversationLastMsgId(conversationId, msgId string) error {
+	lastId, err := a.Client.Get(context.Background(), conversationId).Result()
+	if err != redis.Nil && err != nil {
+		return err
+	}
+	if lastId < msgId {
+		_, err = a.Client.Set(context.Background(), conversationId, msgId, 0).Result()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -61,7 +61,7 @@ func (s *rpcxServer) CreateConversation(ctx context.Context) createConversationF
 			s.logger.Error("CreateConversation dbObj.SessionJoinsConversationUseCopyFrom Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
-		if err := cacheDb.AddConverstaionSessions(reply.ConversationID, args.SessionList); err != nil {
+		if err := cacheDb.AddConversationSessions(reply.ConversationID, args.SessionList); err != nil {
 			s.logger.Error("CreateConversation cacheDb.AddConverstaionSessions Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 		}
 		return nil
@@ -95,7 +95,7 @@ func (s *rpcxServer) JoinConversation(ctx context.Context) JoinConversationFn {
 			s.logger.Error("JoinConversation dbObj.SessionJoinsConversationUseCopyFrom Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
-		if err := cacheDb.AddConverstaionSessions(reply.ConversationID, args.SessionList); err != nil {
+		if err := cacheDb.AddConversationSessions(reply.ConversationID, args.SessionList); err != nil {
 			s.logger.Error("JoinConversation cacheDb.AddConverstaionSessions Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 		}
 		return nil
@@ -327,6 +327,8 @@ func (r *rpcxServer) UpdateConversationLastMsg(ctx context.Context) UpdateConver
 	var ctxDb contant.PgCtxType
 	ctxDb = helper.GetCtxValue(ctx, contant.CTX_POSTGRES_KEY, ctxDb)
 	dbObj := db.New(ctxDb)
+	var cacheDb contant.CacheCtxType
+	cacheDb = helper.GetCtxValue(ctx, contant.CTX_CACHE_DB_KEY, cacheDb)
 	return func(ctx context.Context, args UpdateConversationLastMsgArgs, reply *UpdateConversationLastMsgReply) error {
 		err := dbObj.UpdateConversationLastMsg(ctx, db.UpdateConversationLastMsgParams{
 			LastSendTime:    args.LastTime,
@@ -337,6 +339,7 @@ func (r *rpcxServer) UpdateConversationLastMsg(ctx context.Context) UpdateConver
 		if err != nil {
 			r.logger.Error("UpdateConversationLastMsg dbObj.UpdateConversationLastMsg Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 		}
+		_ = cacheDb.SyncConversationLastMsgId(args.ConversationId, args.LastSendSession)
 		return err
 	}
 }
@@ -378,7 +381,7 @@ func (r *rpcxServer) GetConversationSessions(ctx context.Context) GetConversatio
 		if len(reply.Sessions) == 0 {
 			return nil
 		}
-		if err := cacheDb.AddConverstaionSessions(args.ConversationId, reply.Sessions); err != nil {
+		if err := cacheDb.AddConversationSessions(args.ConversationId, reply.Sessions); err != nil {
 			r.logger.Error("GetConversationSessions cacheDb.AddConverstaionSessions Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 		}
 		return nil
