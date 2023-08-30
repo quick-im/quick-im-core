@@ -13,4 +13,5 @@ const (
 	SERVICE_UPDATE_CONVERSATION_LASTMSG = "UpdateConversationLastMsg"
 	SERVICE_GET_CONVERSATION_SSESSIONS  = "GetConversationSessions"
 	SERVICE_UPDATE_SESSIONS_LAST_MSG    = "UpdateSessionLastRecvMsg"
+	SERVICE_GET_LASTONE_MSGID_FROM_DB   = "GetLastOneMsgFromDb"
 )

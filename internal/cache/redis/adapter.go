@@ -59,3 +59,7 @@ func (a *adapter) SyncConversationLastMsgId(conversationId, msgId string) error 
 	}
 	return nil
 }
+
+func (a *adapter) GetConversationLastMsgId(conversationId string) (string, error) {
+	return a.Client.Get(context.Background(), conversationId).Result()
+}

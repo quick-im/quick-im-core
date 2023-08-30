@@ -420,3 +420,38 @@ func (r *rpcxServer) UpdateSessionLastRecvMsg(ctx context.Context) UpdateSession
 		return nil
 	}
 }
+
+// 获取会话最后一条消息
+type GetLastOneMsgIdFromDbArgs struct {
+	ConversationID string
+}
+
+type GetLastOneMsgIdFromDbReply struct {
+	MsgId string
+}
+
+type getLastOneMsgIdFromDbFn func(context.Context, GetLastOneMsgIdFromDbArgs, *GetLastOneMsgIdFromDbReply) error
+
+func (r *rpcxServer) GetLastOneMsgFromDb(ctx context.Context) getLastOneMsgIdFromDbFn {
+	var ctxDb contant.PgCtxType
+	ctxDb = helper.GetCtxValue(ctx, contant.CTX_POSTGRES_KEY, ctxDb)
+	dbObj := db.New(ctxDb)
+	var cacheDb contant.CacheCtxType
+	cacheDb = helper.GetCtxValue(ctx, contant.CTX_CACHE_DB_KEY, cacheDb)
+	return func(ctx context.Context, args GetLastOneMsgIdFromDbArgs, reply *GetLastOneMsgIdFromDbReply) error {
+		mid, err := cacheDb.GetConversationLastMsgId(args.ConversationID)
+		reply.MsgId = mid
+		if err != nil {
+			r.logger.Error("GetLastOneMsgFromDb cacheDb.GetConversationLastMsgId Err: ", fmt.Sprintf("%v args: %s", err, args.ConversationID))
+			mid, err := dbObj.GetLastOneMsgIdFromDb(ctx, args.ConversationID)
+			if err != nil {
+				r.logger.Error("GetLastOneMsgFromDb dbObj.GetLastOneMsgIdFromDb Err: ", fmt.Sprintf("%v args: %s", err, args.ConversationID))
+				return err
+			}
+			if mid != nil {
+				reply.MsgId = *mid
+			}
+		}
+		return nil
+	}
+}

@@ -87,3 +87,6 @@ FROM public.messages WHERE conversation_id = @conversation_id::text AND msg_id >
 -- name: GetConversationsAllUsers :many
 SELECT id, session_id, last_recv_msg_id, is_kick_out, conversation_id
 FROM public.conversation_session_id WHERE conversation_id = conversation_id::text;
+
+-- name: GetLastOneMsgIdFromDb :one
+SELECT last_msg_id FROM public.conversations WHERE conversation_id = @conversation_id::text;

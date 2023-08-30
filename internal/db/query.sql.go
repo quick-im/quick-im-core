@@ -210,6 +210,17 @@ func (q *Queries) GetLast30MsgFromDb(ctx context.Context, conversationID string)
 	return items, nil
 }
 
+const getLastOneMsgIdFromDb = `-- name: GetLastOneMsgIdFromDb :one
+SELECT last_msg_id FROM public.conversations WHERE conversation_id = $1::text
+`
+
+func (q *Queries) GetLastOneMsgIdFromDb(ctx context.Context, conversationID string) (*string, error) {
+	row := q.db.QueryRow(ctx, getLastOneMsgIdFromDb, conversationID)
+	var last_msg_id *string
+	err := row.Scan(&last_msg_id)
+	return last_msg_id, err
+}
+
 const getMsgFromDbInRange = `-- name: GetMsgFromDbInRange :many
 SELECT msg_id, conversation_id, from_session, send_time, status, "type", "content"
 FROM public.messages WHERE conversation_id = $1::text BETWEEN $2::text AND $3::text
