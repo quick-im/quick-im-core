@@ -34,8 +34,6 @@ import (
 // 	SessionId    string
 // }
 
-// TODO: 考虑将clientAddr更换为网关节点的uuid，防止冲突
-
 type clientList struct {
 	lock sync.RWMutex
 	// 每个msgbroker可以接入若干gateway节点，同一个session不同platform可能接入不同gateway节点，所以这里做一下区分

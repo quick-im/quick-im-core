@@ -64,7 +64,6 @@ func (r *rpcxServer) listenMsg(ctx context.Context, nc *messaging.NatsWarp) {
 		defer r.clientList.lock.RUnlock()
 		for i := range getSessionsReply.Sessions {
 			if platforms, exist := r.clientList.sessonIndex[getSessionsReply.Sessions[i]]; exist {
-				//TODO: 这里的data要包装一下，告诉client发送给具体的session
 				for platform, gatewayUuid := range platforms {
 					if sendMaps[gatewayUuid] == nil {
 						sendMaps[gatewayUuid] = make([]RecvSession, 0)
