@@ -432,7 +432,7 @@ type GetLastOneMsgIdFromDbReply struct {
 
 type getLastOneMsgIdFromDbFn func(context.Context, GetLastOneMsgIdFromDbArgs, *GetLastOneMsgIdFromDbReply) error
 
-func (r *rpcxServer) GetLastOneMsgFromDb(ctx context.Context) getLastOneMsgIdFromDbFn {
+func (r *rpcxServer) GetLastOneMsgIdFromDb(ctx context.Context) getLastOneMsgIdFromDbFn {
 	var ctxDb contant.PgCtxType
 	ctxDb = helper.GetCtxValue(ctx, contant.CTX_POSTGRES_KEY, ctxDb)
 	dbObj := db.New(ctxDb)

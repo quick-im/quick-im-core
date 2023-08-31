@@ -30,6 +30,11 @@ func (r *rpcxServer) BroadcastRecv(ctx context.Context) broadcastRecvFn {
 			r.logger.Error("BroadcastRecv Call Service: conversationService Method: SERVICE_GET_CONVERSATION_SSESSIONS failed,", fmt.Sprintf("args: %#v,err: %v", args, err))
 			return err
 		}
+		getSessionLastIdArgs := conversation.GetLastOneMsgIdFromDbArgs{
+			ConversationID: args.ConversationID,
+		}
+		getSessionLastIdReply := conversation.GetLastOneMsgIdFromDbReply{}
+		_ = conversationService.Call(ctx, conversation.SERVICE_GET_LASTONE_MSGID_FROM_DB, getSessionLastIdArgs, &getSessionLastIdReply)
 		msg := model.Msg(args)
 		// r.connList.lock.RLock()
 		// for i := range getSessionsReply.Sessions {
@@ -48,6 +53,7 @@ func (r *rpcxServer) BroadcastRecv(ctx context.Context) broadcastRecvFn {
 			Action:     SendMsg,
 			MetaData:   msg,
 			ToSessions: []RecvSession{},
+			PreId:      getSessionLastIdReply.MsgId, // 当前消息前的最后一条msgid，准确度待定
 		}
 		sendMaps := map[string][]RecvSession{}
 		r.clientList.lock.RLock()

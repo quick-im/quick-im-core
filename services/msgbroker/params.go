@@ -28,6 +28,7 @@ const (
 
 type BroadcastMsgWarp struct {
 	Action     Action
+	PreId      string
 	MetaData   model.Msg
 	ToSessions []RecvSession
 }
