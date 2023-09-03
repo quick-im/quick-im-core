@@ -11,14 +11,16 @@ import (
 var mySigningKey = []byte("config.Config.Jwt.Key")
 
 type MyCustomClaims struct {
-	Sid uint32 `json:"sid"`
+	Sid      string `json:"sid"`
+	Platform uint8  `json:"platform"`
 	jwt.RegisteredClaims
 }
 
-func ReleaseToken(sid uint32) (token string, err error) {
+func ReleaseToken(sid string, platform uint8) (token string, err error) {
 	// Create the Claims
 	claims := MyCustomClaims{
 		sid,
+		platform,
 		jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)),
 			Issuer:    "quick-im",
