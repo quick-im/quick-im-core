@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/quick-im/quick-im-core/application/gateway/api/server"
+	"github.com/quick-im/quick-im-core/application/gateway/gateway/server"
 )
 
 func main() {

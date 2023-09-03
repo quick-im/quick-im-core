@@ -13,10 +13,17 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-type WSProtoc struct {
+type wsProtoc struct {
+	clients map[string]map[uint8]struct{}
 }
 
-func (ws *WSProtoc) Handler(ctx context.Context) http.HandlerFunc {
+func InitProtoc() *wsProtoc {
+	return &wsProtoc{
+		clients: make(map[string]map[uint8]struct{}),
+	}
+}
+
+func (ws *wsProtoc) Handler(ctx context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {

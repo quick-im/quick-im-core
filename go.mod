@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.0.0
+	github.com/gorilla/websocket v1.5.0
 	github.com/jackc/pgx/v5 v5.4.1
 	github.com/nats-io/nats.go v1.28.0
 	github.com/redis/go-redis/v9 v9.0.5
@@ -23,7 +24,6 @@ require (
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed // indirect
 	github.com/hashicorp/consul/api v1.13.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
@@ -42,7 +42,6 @@ require (
 	github.com/nats-io/nkeys v0.4.4 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/opentracing/opentracing-go v1.1.0 // indirect
-	github.com/r3labs/sse/v2 v2.10.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/rpcxio/libkv v0.5.1 // indirect
@@ -50,7 +49,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
-	gopkg.in/cenkalti/backoff.v1 v1.1.0 // indirect
 	gopkg.in/cenkalti/backoff.v2 v2.2.1 // indirect
 )
 

@@ -3,23 +3,24 @@ package sse
 import (
 	"context"
 	"net/http"
-
-	"github.com/r3labs/sse/v2"
 )
 
-var server = sse.New()
-
-type SSEProtoc struct {
+type sseProtoc struct {
+	clients map[string]map[uint8]struct{}
 }
 
-func (s *SSEProtoc) Handler(ctx context.Context) http.HandlerFunc {
+func InitProtoc() *sseProtoc {
+	return &sseProtoc{
+		clients: make(map[string]map[uint8]struct{}),
+	}
+}
+
+func (s *sseProtoc) Handler(ctx context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		go func() {
 			// Received Browser Disconnection
 			<-r.Context().Done()
 			println("The client is disconnected here")
 		}()
-
-		server.ServeHTTP(w, r)
 	}
 }

@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/quick-im/quick-im-core/application/gateway/api/access"
-	"github.com/quick-im/quick-im-core/application/gateway/api/middleware"
+	"github.com/quick-im/quick-im-core/application/gateway/gateway/access"
+	"github.com/quick-im/quick-im-core/application/gateway/gateway/middleware"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
