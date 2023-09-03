@@ -1,7 +1,10 @@
 package protoc
 
-import "net/http"
+import (
+	"context"
+	"net/http"
+)
 
 type ProtocHandler interface {
-	Handler(http.ResponseWriter, *http.Request)
+	Handler(ctx context.Context) http.HandlerFunc
 }

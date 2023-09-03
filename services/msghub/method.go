@@ -46,23 +46,33 @@ func (r *rpcxServer) SendMsg(ctx context.Context) sendMsgFn {
 		}
 		// 数据持久化
 		// //TODO: 或许这里通过rpc同步调用持久化而非消息队列异步持久化更符合业务？
-		// _, err = js.Publish(config.MqMsgPersistenceGroup, data)
-		// if err != nil {
-		// 	r.logger.Error("SendMsg: push to nats MqMsgPersistenceGroup failed, started rpcx downgrade call. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
-		// 	reply := &persistence.SaveMsgToDbReply{}
-		// 	err = persistenceService.Call(ctx, persistence.SERVICE_SAVE_MSG_TO_DB, broadcastArgs, reply)
-		// 	if err != nil {
-		// 		r.logger.Error("SendMsg: nats & rpcx call failed, failed to store message. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
-		// 		return err
-		// 	}
-		// }
-		// TODO: 这里使用同步持久化的原因：防止消息推送比持久化先到达？
-		reply2 := persistence.SaveMsgToDbReply{}
-		err = persistenceService.Call(ctx, persistence.SERVICE_SAVE_MSG_TO_DB, broadcastArgs, &reply2)
+		_, err = js.Publish(config.MqMsgPersistenceGroup, data)
 		if err != nil {
-			r.logger.Error("SendMsg: nats & rpcx call failed, failed to store message. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
-			return err
+			r.logger.Error("SendMsg: push to nats MqMsgPersistenceGroup failed, started rpcx downgrade call. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
+			args2 := persistence.SaveMsgToDbArgs{
+				Msgs: []model.Msg{
+					broadcastArgs,
+				},
+			}
+			reply2 := persistence.SaveMsgToDbReply{}
+			err = persistenceService.Call(ctx, persistence.SERVICE_SAVE_MSG_TO_DB, args2, &reply2)
+			if err != nil {
+				r.logger.Error("SendMsg: nats & rpcx call failed, failed to store message. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
+				return err
+			}
 		}
+		// TODO: 这里使用同步持久化的原因：防止消息推送比持久化先到达？Benchmark测试 同步比异步满3~4倍
+		// args2 := persistence.SaveMsgToDbArgs{
+		// 	Msgs: []model.Msg{
+		// 		broadcastArgs,
+		// 	},
+		// }
+		// reply2 := persistence.SaveMsgToDbReply{}
+		// err = persistenceService.Call(ctx, persistence.SERVICE_SAVE_MSG_TO_DB, args2, &reply2)
+		// if err != nil {
+		// 	r.logger.Error("SendMsg: nats & rpcx call failed, failed to store message. Err: ", fmt.Sprintf("arg:%+v err:%v", args, err))
+		// 	return err
+		// }
 		// 消息广播给消息交付组件
 		_, err = js.Publish(config.MqMsgBrokerSubject, data)
 		if err != nil {

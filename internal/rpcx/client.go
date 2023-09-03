@@ -26,7 +26,7 @@ type RpcxClientWithOpt struct {
 	consulServers            []string
 	trackJaegeragentHostPort string
 	tracePtr                 *trace.TracerProvider
-	xclient                  client.XClient
+	xclientPool              *client.XClientPool
 	ctx                      context.Context
 }
 
@@ -121,18 +121,14 @@ func NewClient(opts ...rpcxOption) (*RpcxClientWithOpt, error) {
 			return nil, err
 		}
 	}
-	xclient := client.NewXClient(c.serviceName, client.Failtry, client.RandomSelect, cliDiscovery, client.DefaultOption)
-	if c.openTracing {
-		tracer, ctx := c.addTrace(xclient)
-		c.tracePtr = tracer
-		c.ctx = ctx
-	}
-	c.xclient = xclient
+	xclients := client.NewXClientPool(10, c.serviceName, client.Failtry, client.RandomSelect, cliDiscovery, client.DefaultOption)
+	c.xclientPool = xclients
 	return c, nil
 }
 
 func (s *RpcxClientWithOpt) Close() error {
-	return s.xclient.Close()
+	s.xclientPool.Close()
+	return nil
 }
 
 func (s *RpcxClientWithOpt) ShutdownTrace() error {
@@ -144,10 +140,7 @@ func (s *RpcxClientWithOpt) ShutdownTrace() error {
 
 func (s *RpcxClientWithOpt) CloseAndShutdownTrace() error {
 	var err error
-	err1 := s.xclient.Close()
-	if err1 != nil {
-		err = err1
-	}
+	s.xclientPool.Close()
 	if s.tracePtr != nil {
 		err2 := s.tracePtr.Shutdown(s.ctx)
 		if err2 != nil {
@@ -167,7 +160,11 @@ func (s *RpcxClientWithOpt) Call(ctx context.Context, serviceMethod string, arg 
 	}
 	ctxInner := context.WithValue(s.ctx, ctxInitInner("initCtx"), nil)
 	ctxInner = context.WithValue(ctxInner, share.ReqMetaDataKey, meta)
-	return s.xclient.Call(ctxInner, serviceMethod, arg, replay)
+	xclient := s.xclientPool.Get()
+	if s.openTracing {
+		s.addTrace(xclient)
+	}
+	return xclient.Call(ctxInner, serviceMethod, arg, replay)
 }
 
 func (s *RpcxClientWithOpt) Broadcast(ctx context.Context, serviceMethod string, arg interface{}, replay interface{}, metadata ...metaDataWarp) error {
@@ -180,18 +177,25 @@ func (s *RpcxClientWithOpt) Broadcast(ctx context.Context, serviceMethod string,
 	}
 	ctxInner := context.WithValue(s.ctx, ctxInitInner("initCtx"), nil)
 	ctxInner = context.WithValue(ctxInner, share.ReqMetaDataKey, meta)
-	return s.xclient.Broadcast(ctxInner, serviceMethod, arg, replay)
+	xclient := s.xclientPool.Get()
+	if s.openTracing {
+		s.addTrace(xclient)
+	}
+	return xclient.Broadcast(ctxInner, serviceMethod, arg, replay)
 }
 
-func (s *RpcxClientWithOpt) addTrace(xclient client.XClient) (*trace.TracerProvider, context.Context) {
+func (s *RpcxClientWithOpt) addTrace(xclient client.XClient) {
 	// 添加 Jaeger 拦截器
 	plugins := client.NewPluginContainer()
-	tracer, ctx, err := tracing.InitJaeger(s.clientName, s.trackJaegeragentHostPort)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to initialize Jaeger: %v", err))
+	if s.tracePtr == nil {
+		var err error
+		s.tracePtr, s.ctx, err = tracing.InitJaeger(s.clientName, s.trackJaegeragentHostPort)
+		if err != nil {
+			panic(fmt.Sprintf("Failed to initialize Jaeger: %v", err))
+		}
 	}
 	ts := otel.Tracer(s.clientName)
 	plugins.Add(plugin.NewClientTracingPlugin(ts))
 	xclient.SetPlugins(plugins)
-	return tracer, ctx
+	// return tracer, ctx
 }

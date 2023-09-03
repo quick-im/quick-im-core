@@ -15,4 +15,7 @@ const (
 	RethinkMsgDb = "msg"
 	// 注册中心服务前缀
 	ServerPrefix = "quick.im.instance.1"
+	// TLS证书
+	PublicCert  = "cert/server.crt"
+	PriviteCert = "cert/server.key"
 )
