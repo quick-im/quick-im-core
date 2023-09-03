@@ -7,6 +7,5 @@ import (
 
 func NotifyHandler(ctx context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 	}
 }
