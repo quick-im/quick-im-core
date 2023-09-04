@@ -131,6 +131,7 @@ func (r *rpcxServer) RegisterSession(ctx context.Context) registerSessionFn {
 			r.clientList.client[args.GatewayUuid].connMap[args.SessionId][args.Platform] = struct{}{}
 		} else {
 			// 如果不存在则重新注册
+			reply.NeedKeep = true // 告知客户端需要监听本链接
 			r.clientList.client[args.GatewayUuid] = clientInfo{
 				conn: clientConn,
 				connMap: map[string]map[uint8]struct{}{

@@ -19,7 +19,7 @@ func TestRecvMsg(t *testing.T) {
 	c := codec.GobUtils[msgbroker.BroadcastMsgWarp]{}
 	ch := make(chan *protocol.Message)
 	d, _ := cclient.NewConsulDiscovery(config.ServerPrefix, msgbroker.SERVER_NAME, []string{"127.0.0.1:8500"}, nil)
-	xclient := client.NewBidirectionalXClient(msgbroker.SERVER_NAME, client.Failtry, client.RandomSelect, d, client.DefaultOption, ch)
+	xclient := client.NewBidirectionalXClient(msgbroker.SERVER_NAME, client.Failtry, client.ConsistentHash, d, client.DefaultOption, ch)
 	defer xclient.Close()
 	gatewayUuid := uuid.New().String()
 	args := msgbroker.RegisterSessionInfo{
@@ -28,7 +28,6 @@ func TestRecvMsg(t *testing.T) {
 		SessionId:   "50864896-8136-4a43-8a48-1d3325a7f78f",
 	}
 	reply := &msgbroker.RegisterSessionReply{}
-
 	if err := xclient.Call(context.Background(), msgbroker.SERVICE_REGISTER_SESSION, args, reply); err != nil {
 		t.Error(err)
 	}

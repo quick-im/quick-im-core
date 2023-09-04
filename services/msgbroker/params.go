@@ -16,6 +16,7 @@ type RegisterSessionInfo struct {
 }
 
 type RegisterSessionReply struct {
+	NeedKeep bool
 }
 
 type Action uint8
