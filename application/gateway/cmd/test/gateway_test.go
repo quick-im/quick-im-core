@@ -31,6 +31,7 @@ func TestRecvMsg(t *testing.T) {
 	if err := xclient.Call(context.Background(), msgbroker.SERVICE_REGISTER_SESSION, args, reply); err != nil {
 		t.Error(err)
 	}
+	defer xclient.Close()
 	var count = 0
 	for msg := range ch {
 		// fmt.Printf("receive msg from server: %s\n", msg.Payload)

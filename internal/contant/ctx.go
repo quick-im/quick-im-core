@@ -11,3 +11,7 @@ const (
 	CTX_SERVICE_CONVERSATION ContentKey = "__ctx.service.conversation.key__"
 	CTX_SERVICE_MSGBROKER    ContentKey = "__ctx.service.msgbroker.key__"
 )
+
+const (
+	HTTP_CTX_JWT_CLAIMS ContentKey = "__http.ctx.jwt.claims__"
+)

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/quick-im/quick-im-core/internal/quickerr"
 )
 
 var mySigningKey = []byte("config.Config.Jwt.Key")
@@ -58,6 +59,7 @@ func ParseToken(token string) (*MyCustomClaims, error) {
 		if claims, ok := tokenClaims.Claims.(*MyCustomClaims); ok && tokenClaims.Valid {
 			return claims, nil
 		}
+		return nil, quickerr.ErrToken
 	}
 	return nil, err
 

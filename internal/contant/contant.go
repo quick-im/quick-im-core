@@ -3,6 +3,7 @@ package contant
 import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/quick-im/quick-im-core/internal/cache"
+	"github.com/quick-im/quick-im-core/internal/jwt"
 	"github.com/quick-im/quick-im-core/internal/messaging"
 	"github.com/quick-im/quick-im-core/internal/rpcx"
 	"github.com/redis/go-redis/v9"
@@ -18,6 +19,8 @@ type LoggerCtxType = *zap.Logger
 type NatsCtxType = *messaging.NatsWarp
 type RpcxClientCtxType = *rpcx.RpcxClientWithOpt
 type RethinkDbCtxType = *r.Session
+
+type ClaimsCtxType = *jwt.MyCustomClaims
 
 type Sort bool
 

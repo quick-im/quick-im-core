@@ -50,7 +50,7 @@ func (a *apiServer) InitAndStartServer(ctx context.Context) {
 		// Adjust status code to 204
 		w.WriteHeader(http.StatusNoContent)
 	})
-	router.HandlerFunc("GET", "/notify", access.NotifyHandler(ctx))
+	router.HandlerFunc("GET", "/notify", middleware.JwtAuth(ctx, access.NotifyHandler))
 	router.HandlerFunc("GET", "/", middleware.AllowCros(ctx, func(w http.ResponseWriter, r *http.Request) {
 		w.Write(Data)
 	}))

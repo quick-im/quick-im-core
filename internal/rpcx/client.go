@@ -126,6 +126,27 @@ func NewClient(opts ...rpcxOption) (*RpcxClientWithOpt, error) {
 	return c, nil
 }
 
+func (c *RpcxClientWithOpt) GetOnce() (client.XClient, error) {
+	var cliDiscovery client.ServiceDiscovery
+	var err error
+	if len(c.consulServers) != 0 {
+		cliDiscovery, err = cclient.NewConsulDiscovery(config.ServerPrefix, c.serviceName, c.consulServers, nil)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		cliDiscovery, err = client.NewPeer2PeerDiscovery(c.serverAddress, "")
+		if err != nil {
+			return nil, err
+		}
+	}
+	xclient := client.NewXClient(c.serviceName, client.Failtry, client.RandomSelect, cliDiscovery, client.DefaultOption)
+	if c.openTracing {
+		c.addTrace(xclient)
+	}
+	return xclient, nil
+}
+
 func (s *RpcxClientWithOpt) Close() error {
 	s.xclientPool.Close()
 	return nil
