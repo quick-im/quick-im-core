@@ -11,20 +11,20 @@ import (
 
 type clients struct {
 	gid string
-	cs  []clientAndCh
+	ch  chan *clientAndCh
 }
 
 type clientAndCh struct {
 	c  client.XClient
-	ch <-chan *protocol.Message
+	ch chan *protocol.Message
 }
 
 var cs = &clients{
 	gid: uuid.New().String(),
-	cs:  make([]clientAndCh, 0),
+	ch:  make(chan *clientAndCh),
 }
 
-func RegisterTerm(c client.XClient, ch <-chan *protocol.Message, sid string, platform uint8) error {
+func RegisterTerm(ctx context.Context, c client.XClient, ch <-chan *protocol.Message, sid string, platform uint8) error {
 	regSessionArgs := msgbroker.RegisterSessionInfo{
 		Platform:    platform,
 		GatewayUuid: cs.gid,
@@ -36,12 +36,35 @@ func RegisterTerm(c client.XClient, ch <-chan *protocol.Message, sid string, pla
 	}
 	if regSessionReply.NeedKeep {
 		// 保持连接
-		cs.cs = append(cs.cs, clientAndCh{
+		select {
+		case cs.ch <- &clientAndCh{
 			c:  c,
-			ch: ch,
-		})
+			ch: make(chan *protocol.Message),
+		}:
+		case <-ctx.Done():
+			println("register timeout", sid, "-", platform)
+		}
 	} else {
 		_ = c.Close()
 	}
 	return nil
+}
+
+func RunMsgPollServer(ctx context.Context) {
+	cs.Run(ctx)
+}
+
+func (c *clients) Run(ctx context.Context) {
+	for {
+		if cn, ok := <-c.ch; ok {
+			go cn.ListenMsg(ctx)
+		}
+	}
+}
+
+func (cn *clientAndCh) ListenMsg(ctx context.Context) {
+	defer cn.c.Close()
+	for msg := range cn.ch {
+		_ = msg
+	}
 }
