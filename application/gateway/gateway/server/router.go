@@ -51,6 +51,7 @@ func (a *apiServer) InitAndStartServer(ctx context.Context) {
 		w.WriteHeader(http.StatusNoContent)
 	})
 	router.HandlerFunc("GET", "/notify", middleware.JwtAuth(ctx, access.NotifyHandler))
+	router.HandlerFunc("POST", "/send_msg", middleware.JwtAuth(ctx, access.SendMsgHandler))
 	router.HandlerFunc("GET", "/", middleware.AllowCros(ctx, func(w http.ResponseWriter, r *http.Request) {
 		w.Write(Data)
 	}))

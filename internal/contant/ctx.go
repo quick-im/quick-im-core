@@ -9,7 +9,8 @@ const (
 	CTX_SERVICE_MSGBORKER    ContentKey = "__ctx.service.msgborker.key__"
 	CTX_SERVICE_PERSISTENCE  ContentKey = "__ctx.service.persistence.key__"
 	CTX_SERVICE_CONVERSATION ContentKey = "__ctx.service.conversation.key__"
-	CTX_SERVICE_MSGBROKER    ContentKey = "__ctx.service.msgbroker.key__"
+	CTX_SERVICE_MSGHUB       ContentKey = "__ctx.service.msghub.key__"
+	CTX_SERVICE_MSGID        ContentKey = "__ctx.service.msgid.key__"
 )
 
 const (

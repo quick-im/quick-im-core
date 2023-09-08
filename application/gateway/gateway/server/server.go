@@ -1,8 +1,12 @@
 package server
 
 import (
+	"fmt"
+
+	"github.com/quick-im/quick-im-core/internal/config"
 	"github.com/quick-im/quick-im-core/internal/logger"
 	"github.com/quick-im/quick-im-core/internal/logger/innerzap"
+	"github.com/quick-im/quick-im-core/internal/rpcx"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -94,4 +98,20 @@ func WithLogger(logger logger.Logger) Option {
 	return func(rs *apiServer) {
 		rs.logger = logger
 	}
+}
+
+func (r *apiServer) InitDepServices(serviceName string) *rpcx.RpcxClientWithOpt {
+	service, err := rpcx.NewClient(
+		rpcx.WithBasePath(config.ServerPrefix),
+		rpcx.WithUseConsulRegistry(r.useConsulRegistry),
+		rpcx.WithConsulServers(r.consulServers...),
+		rpcx.WithServiceName(serviceName),
+		rpcx.WithClientName(r.serviceName),
+		rpcx.WithOpenTracing(r.openTracing),
+		rpcx.WithJeagerAgentHostPort(r.trackAgentHostPort),
+	)
+	if err != nil {
+		r.logger.Fatal("init dep err", fmt.Sprintf("serviceName: %s , Err: %v", serviceName, err))
+	}
+	return service
 }

@@ -2,8 +2,10 @@ package msgpool
 
 import (
 	"context"
+	"sync"
 
 	"github.com/google/uuid"
+	"github.com/quick-im/quick-im-core/internal/codec"
 	"github.com/quick-im/quick-im-core/services/msgbroker"
 	"github.com/smallnest/rpcx/client"
 	"github.com/smallnest/rpcx/protocol"
@@ -24,7 +26,11 @@ var cs = &clients{
 	ch:  make(chan *clientAndCh),
 }
 
-func RegisterTerm(ctx context.Context, c client.XClient, ch <-chan *protocol.Message, sid string, platform uint8) error {
+var subs = make(map[string]map[uint8]struct{})
+var lock = sync.RWMutex{}
+
+// 如果needKeep为true，请不要在外部关闭XClient
+func RegisterTerm(ctx context.Context, c client.XClient, ch chan *protocol.Message, sid string, platform uint8) (needKeep bool, err error) {
 	regSessionArgs := msgbroker.RegisterSessionInfo{
 		Platform:    platform,
 		GatewayUuid: cs.gid,
@@ -32,22 +38,23 @@ func RegisterTerm(ctx context.Context, c client.XClient, ch <-chan *protocol.Mes
 	}
 	regSessionReply := msgbroker.RegisterSessionReply{}
 	if err := c.Call(context.Background(), msgbroker.SERVICE_REGISTER_SESSION, regSessionArgs, &regSessionReply); err != nil {
-		return err
+		return needKeep, err
 	}
+	// println(regSessionReply.NeedKeep)
 	if regSessionReply.NeedKeep {
 		// 保持连接
 		select {
 		case cs.ch <- &clientAndCh{
 			c:  c,
-			ch: make(chan *protocol.Message),
+			ch: ch,
 		}:
+			needKeep = true
 		case <-ctx.Done():
+			needKeep = false
 			println("register timeout", sid, "-", platform)
 		}
-	} else {
-		_ = c.Close()
 	}
-	return nil
+	return needKeep, nil
 }
 
 func RunMsgPollServer(ctx context.Context) {
@@ -64,7 +71,12 @@ func (c *clients) Run(ctx context.Context) {
 
 func (cn *clientAndCh) ListenMsg(ctx context.Context) {
 	defer cn.c.Close()
+	msgData := msgbroker.BroadcastMsgWarp{}
+	codec := codec.GobUtils[msgbroker.BroadcastMsgWarp]{}
 	for msg := range cn.ch {
-		_ = msg
+		if err := codec.Decode(msg.Payload, &msgData); err != nil {
+			println("Decode Msg Failed: ", err)
+			continue
+		}
 	}
 }
