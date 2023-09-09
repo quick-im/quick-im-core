@@ -43,7 +43,7 @@ func TestRegisterTerm(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := RegisterTerm(tt.args.ctx, tt.args.c, tt.args.ch, tt.args.sid, tt.args.platform); (err != nil) != tt.wantErr {
+			if _, err := RegisterTerm(tt.args.ctx, tt.args.c, tt.args.ch, tt.args.sid, tt.args.platform); (err != nil) != tt.wantErr {
 				t.Errorf("RegisterTerm() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

@@ -8,6 +8,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/quick-im/quick-im-core/application/gateway/gateway/access"
 	"github.com/quick-im/quick-im-core/application/gateway/gateway/middleware"
+	"github.com/quick-im/quick-im-core/internal/contant"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
@@ -15,6 +16,7 @@ import (
 var Data = []byte{113, 117, 105, 99, 107, 45, 105, 109}
 
 func (a *apiServer) InitAndStartServer(ctx context.Context) {
+	ctx = context.WithValue(ctx, contant.CTX_LOGGER_KEY, a.logger)
 	router := httprouter.New()
 	// cert, err := tls.LoadX509KeyPair(config.PublicCert, config.PriviteCert)
 	// if err != nil {

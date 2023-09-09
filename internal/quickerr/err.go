@@ -3,28 +3,37 @@ package quickerr
 import "errors"
 
 var (
-	ErrConversationTypeRange   = errors.New("conversation id ranges from 0 to 15")
-	ErrConversationNumberRange = errors.New("conversation contains at least one user")
-	ErrTraceClosed             = errors.New("trace closed")
-	ErrDriveNotSupport         = errors.New("unsupported driver")
-	ErrToken                   = warpErr(10101, "invalid token")
-	ErrHttpInvaildParam        = warpErr(10001, "invalid parameter")
+	ErrConversationTypeRange     = warpErr(90010, "conversation id ranges from 0 to 15")
+	ErrConversationNumberRange   = warpErr(90011, "conversation contains at least one user")
+	ErrTraceClosed               = warpErr(90012, "trace closed")
+	ErrDriveNotSupport           = warpErr(90013, "unsupported driver")
+	ErrToken                     = warpErr(10101, "invalid token")
+	ErrHttpInvaildParam          = warpErr(10001, "invalid parameter")
+	ErrInternalServiceCallFailed = warpErr(10002, "internal service call failed")
 )
 
-type errWarp struct {
+type responseWarp[T any] struct {
 	Code   int32  `json:"code"`
-	ErrStr string `json:"error"`
+	ErrStr string `json:"error,omitempty"`
 	Err    error  `json:"-"`
+	Data   T      `json:"data,omitempty"`
 }
 
-func warpErr(code int32, err string) errWarp {
-	return errWarp{Err: errors.New(err), ErrStr: err, Code: code}
+func warpErr(code int32, err string) responseWarp[struct{}] {
+	return responseWarp[struct{}]{Err: errors.New(err), ErrStr: err, Code: code}
 }
 
-func (e errWarp) Error() string {
+func (e responseWarp[T]) Error() string {
 	return e.Err.Error()
 }
 
-func (e errWarp) GetCode() int32 {
+func (e responseWarp[T]) GetCode() int32 {
 	return e.Code
+}
+
+func HttpResponeWarp[T any](data T) responseWarp[T] {
+	return responseWarp[T]{
+		Code: 0,
+		Data: data,
+	}
 }
