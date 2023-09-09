@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS public.conversations (
 	last_msg_id varchar NULL,
 	last_send_time timestamp NULL,
 	is_delete bool NOT NULL DEFAULT false,
-	conversation_type int4 NOT NULL DEFAULT 0,
+	conversation_type int8 NOT NULL DEFAULT 0,
 	last_send_session varchar NULL,
 	is_archive bool NOT NULL DEFAULT false,
 	CONSTRAINT conversations_pk PRIMARY KEY (conversation_id)

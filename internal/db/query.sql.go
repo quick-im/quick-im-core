@@ -30,11 +30,16 @@ func (q *Queries) CheckJoinedonversation(ctx context.Context, arg CheckJoinedonv
 const createConversation = `-- name: CreateConversation :exec
 INSERT INTO public.conversations
 (conversation_id, last_msg_id, last_send_time, is_delete, is_archive, conversation_type, last_send_session)
-VALUES($1::varchar, NULL, NULL, false, false, 0, NULL)
+VALUES($1::varchar, NULL, NULL, false, false, $2::int8, NULL)
 `
 
-func (q *Queries) CreateConversation(ctx context.Context, conversationID string) error {
-	_, err := q.db.Exec(ctx, createConversation, conversationID)
+type CreateConversationParams struct {
+	ConversationID   string
+	ConversationType int64
+}
+
+func (q *Queries) CreateConversation(ctx context.Context, arg CreateConversationParams) error {
+	_, err := q.db.Exec(ctx, createConversation, arg.ConversationID, arg.ConversationType)
 	return err
 }
 

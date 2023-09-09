@@ -20,7 +20,7 @@ const (
 )
 
 type CreateConversationArgs struct {
-	ConversationType uint8
+	ConversationType uint64
 	SessionList      []string
 }
 
@@ -46,7 +46,10 @@ func (s *rpcxServer) CreateConversation(ctx context.Context) createConversationF
 			return quickerr.ErrConversationNumberRange
 		}
 		reply.ConversationID = uuid.New().String()
-		if err := dbObj.CreateConversation(ctx, reply.ConversationID); err != nil {
+		if err := dbObj.CreateConversation(ctx, db.CreateConversationParams{
+			ConversationID:   reply.ConversationID,
+			ConversationType: int64(args.ConversationType),
+		}); err != nil {
 			s.logger.Error("CreateConversation dbObj.CreateConversation Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}

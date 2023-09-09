@@ -15,7 +15,7 @@ type Conversation struct {
 	LastMsgID        *string
 	LastSendTime     *time.Time
 	IsDelete         bool
-	ConversationType int32
+	ConversationType int64
 	LastSendSession  *string
 	IsArchive        bool
 }

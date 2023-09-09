@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/quick-im/quick-im-core/internal/contant"
 	"github.com/quick-im/quick-im-core/internal/helper"
@@ -11,6 +12,8 @@ import (
 	"github.com/quick-im/quick-im-core/internal/quickerr"
 	"github.com/quick-im/quick-im-core/internal/rpcx"
 	"github.com/quick-im/quick-im-core/services/conversation"
+	"github.com/quick-im/quick-im-core/services/msghub"
+	"github.com/quick-im/quick-im-core/services/msgid"
 )
 
 type getConversationInfoArgs struct {
@@ -96,13 +99,15 @@ func CheckJoinedConversation(ctx context.Context) http.HandlerFunc {
 }
 
 type createConversationArgs struct {
-	ConversationType uint8    `json:"conversation_type"`
+	ConversationType uint64   `json:"conversation_type"`
 	Sessions         []string `json:"sessions"`
 }
 
 // todo: 创建会话成功的时候需要通知加入会话的用户
 func CreateConversationInner(ctx context.Context) http.HandlerFunc {
 	conversationService := helper.GetCtxValue(ctx, contant.CTX_SERVICE_CONVERSATION, &rpcx.RpcxClientWithOpt{})
+	msghubService := helper.GetCtxValue(ctx, contant.CTX_SERVICE_MSGHUB, &rpcx.RpcxClientWithOpt{})
+	msgidService := helper.GetCtxValue(ctx, contant.CTX_SERVICE_MSGID, &rpcx.RpcxClientWithOpt{})
 	var log logger.Logger
 	log = helper.GetCtxValue(ctx, contant.CTX_LOGGER_KEY, log)
 	claims := helper.GetCtxValue(ctx, contant.HTTP_CTX_JWT_CLAIMS, contant.JWTClaimsCtxType)
@@ -123,6 +128,30 @@ func CreateConversationInner(ctx context.Context) http.HandlerFunc {
 			log.Error("Gateway method: CreateConversationInner Fn conversationService.Call:conversation.SERVICE_CREATE_CONVERSATION ,err: ", err.Error())
 			_ = encoder.Encode(quickerr.ErrInternalServiceCallFailed)
 			return
+		}
+		msgIdArgs := msgid.GenerateMessageIDArgs{
+			ConversationType: clientArgs.ConversationType,
+			ConversationID:   createConversationReply.ConversationID,
+		}
+		msgIdReply := msgid.GenerateMessageIDReply{}
+		if err := msgidService.Call(ctx, msgid.SERVICE_GENERATE_MESSAGE_ID, msgIdArgs, &msgIdReply); err != nil {
+			log.Error("Gateway method: CreateConversationInner Fn msgidService.Call:msgid.SERVICE_GENERATE_MESSAGE_ID ,err: ", err.Error())
+			// _ = encoder.Encode(quickerr.ErrInternalServiceCallFailed)
+			// return
+		}
+		sendMsgArgs := msghub.SendMsgArgs{
+			MsgId:          msgIdReply.MsgID,
+			FromSession:    claims.Sid,
+			ConversationID: createConversationReply.ConversationID,
+			MsgType:        0,
+			Content:        []byte("您已加入群聊"),
+			SendTime:       time.Now(),
+		}
+		sendMsgReply := msghub.SendMsgReply{}
+		if err := msghubService.Call(ctx, msghub.SERVICE_SEND_MSG, sendMsgArgs, &sendMsgReply); err != nil {
+			log.Error("Gateway method: CreateConversationInner Fn msghubService.Call:msghub.SERVICE_SEND_MSG ,err: ", err.Error())
+			// _ = encoder.Encode(quickerr.ErrInternalServiceCallFailed)
+			// return
 		}
 		_ = encoder.Encode(quickerr.HttpResponeWarp(createConversationReply))
 	}
