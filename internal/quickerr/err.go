@@ -10,6 +10,7 @@ var (
 	ErrToken                     = warpErr(10101, "invalid token")
 	ErrHttpInvaildParam          = warpErr(10001, "invalid parameter")
 	ErrInternalServiceCallFailed = warpErr(10002, "internal service call failed")
+	ErrNotAllowedRequest         = warpErr(10003, "not allowed request")
 )
 
 type responseWarp[T any] struct {

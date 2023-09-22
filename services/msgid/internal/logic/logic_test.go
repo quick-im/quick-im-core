@@ -22,3 +22,7 @@ func Benchmark_base32Encode(b *testing.B) {
 		_ = base32Encode(7079856935964509836, 125182123728)
 	}
 }
+
+func TestGenerateRongCloudMessageID(t *testing.T) {
+	println(GenerateRongCloudMessageID(1, "tt.args.conversationID"))
+}

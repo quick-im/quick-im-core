@@ -1,5 +1,7 @@
 package config
 
+import "net"
+
 const (
 	// 接口通信密钥
 	ServiceKey = "quick-im"
@@ -18,4 +20,12 @@ const (
 	// TLS证书
 	PublicCert  = "cert/server.crt"
 	PriviteCert = "cert/server.key"
+)
+
+var (
+	// 调试使用，生产环境不建议
+	_, all, _ = net.ParseCIDR("0.0.0.0/0")
+	IPWhite   = []*net.IPNet{
+		all,
+	}
 )
