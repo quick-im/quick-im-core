@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/quick-im/quick-im-core/application/gateway/gateway/msgpool"
 	"github.com/quick-im/quick-im-core/internal/contant"
@@ -24,11 +23,6 @@ func InitProtoc() *sseProtoc {
 	}
 }
 
-type serverSentEvent struct {
-	EventType string
-	Data      string
-}
-
 func (s *sseProtoc) Handler(ctx context.Context) http.HandlerFunc {
 	claims := helper.GetCtxValue(ctx, contant.HTTP_CTX_JWT_CLAIMS, contant.JWTClaimsCtxType)
 	var log logger.Logger
@@ -44,10 +38,6 @@ func (s *sseProtoc) Handler(ctx context.Context) http.HandlerFunc {
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		eventData := &serverSentEvent{
-			EventType: "message",
-			Data:      "",
-		}
 		ch, ok := msgpool.GetMsgChannel(claims.Sid, claims.Platform)
 		if !ok {
 			log.Error("PollHandler: msg channel not found")
@@ -60,8 +50,8 @@ func (s *sseProtoc) Handler(ctx context.Context) http.HandlerFunc {
 				log.Error("PollHandler: marshal msg error", err.Error())
 				continue
 			}
-			fmt.Fprintf(w, "id: %d\n", time.Now().Unix())
-			fmt.Fprintf(w, "event: %s\n", eventData.EventType)
+			fmt.Fprintf(w, "id: %s\n", msg.MsgId)
+			fmt.Fprintf(w, "event: message\n")
 			fmt.Fprintf(w, "data: %s\n\n", data)
 			w.(http.Flusher).Flush()
 		}
