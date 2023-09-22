@@ -144,7 +144,7 @@ func CreateConversationInner(ctx context.Context) http.HandlerFunc {
 			FromSession:    claims.Sid,
 			ConversationID: createConversationReply.ConversationID,
 			MsgType:        0,
-			Content:        []byte("您已加入群聊"),
+			Content:        []byte("您已加入对话 "),
 			SendTime:       time.Now(),
 		}
 		sendMsgReply := msghub.SendMsgReply{}

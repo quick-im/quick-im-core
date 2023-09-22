@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/quick-im/quick-im-core/internal/codec"
+	"github.com/quick-im/quick-im-core/internal/msgdb/model"
 	"github.com/quick-im/quick-im-core/services/msgbroker"
 	"github.com/smallnest/rpcx/client"
 	"github.com/smallnest/rpcx/protocol"
@@ -21,12 +22,14 @@ type clientAndCh struct {
 	ch chan *protocol.Message
 }
 
+var Gid = uuid.New().String()
+
 var cs = &clients{
-	gid: uuid.New().String(),
+	gid: Gid,
 	ch:  make(chan *clientAndCh),
 }
 
-var subs = make(map[string]map[uint8]struct{})
+var subs = make(map[string]map[uint8]chan model.Msg)
 var lock = sync.RWMutex{}
 
 // 如果needKeep为true，请不要在外部关闭XClient
@@ -41,6 +44,12 @@ func RegisterTerm(ctx context.Context, c client.XClient, ch chan *protocol.Messa
 		return needKeep, err
 	}
 	// println(regSessionReply.NeedKeep)
+	lock.Lock()
+	if _, ok := subs[sid]; !ok {
+		subs[sid] = make(map[uint8]chan model.Msg)
+	}
+	subs[sid][platform] = make(chan model.Msg)
+	lock.Unlock()
 	if regSessionReply.NeedKeep {
 		// 保持连接
 		select {
@@ -55,6 +64,18 @@ func RegisterTerm(ctx context.Context, c client.XClient, ch chan *protocol.Messa
 		}
 	}
 	return needKeep, nil
+}
+
+func GetMsgChannel(sid string, platform uint8) (ch <-chan model.Msg, ok bool) {
+	lock.RLock()
+	defer lock.RUnlock()
+	if chs, ok := subs[sid]; ok {
+		if ch, ok := chs[platform]; ok {
+
+			return ch, ok
+		}
+	}
+	return nil, false
 }
 
 func RunMsgPollServer(ctx context.Context) {
@@ -78,5 +99,13 @@ func (cn *clientAndCh) ListenMsg(ctx context.Context) {
 			println("Decode Msg Failed: ", err)
 			continue
 		}
+		lock.RLock()
+		// 消息分发
+		for i := range msgData.ToSessions {
+			if ch, ok := subs[msgData.ToSessions[i].SessionId][msgData.ToSessions[i].Platform]; ok {
+				ch <- msgData.MetaData
+			}
+		}
+		lock.RUnlock()
 	}
 }
