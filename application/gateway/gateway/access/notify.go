@@ -29,13 +29,13 @@ func NotifyHandler(ctx context.Context) http.HandlerFunc {
 			_ = encoder.Encode(err)
 			return
 		}
-		msgbrokerServiceClient, err := msgbrokerService.GetOnce()
+		ch := make(chan *protocol.Message)
+		msgbrokerServiceClient, err := msgbrokerService.NewBidirectionalXClient(ch)
 		if err != nil {
-			log.Error("Gateway method: NotifyHandler msgbrokerService.GetOnce() ,err: ", err.Error())
+			log.Error("Gateway method: NotifyHandler msgbrokerService.NewBidirectionalXClient() ,err: ", err.Error())
 			_ = encoder.Encode(quickerr.ErrInternalServiceCallFailed)
 			return
 		}
-		ch := make(chan *protocol.Message)
 		keep, err := msgpool.RegisterTerm(ctx, msgbrokerServiceClient, ch, claims.Sid, claims.Platform)
 		if err != nil {
 			msgbrokerServiceClient.Close()

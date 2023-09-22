@@ -68,6 +68,7 @@ func RegisterTerm(ctx context.Context, c client.XClient, ch chan *protocol.Messa
 			c:  c,
 			ch: ch,
 		}:
+			println("register success", sid, "-", platform)
 			needKeep = true
 		case <-ctx.Done():
 			needKeep = false
@@ -109,12 +110,12 @@ func (cch chWarp) GetCh() <-chan model.Msg {
 }
 
 func RunMsgPollServer(ctx context.Context) {
-	cs.Run(ctx)
+	run(ctx)
 }
 
-func (c *clients) Run(ctx context.Context) {
+func run(ctx context.Context) {
 	for {
-		if cn, ok := <-c.ch; ok {
+		if cn, ok := <-cs.ch; ok {
 			go cn.ListenMsg(ctx)
 		}
 	}
@@ -135,6 +136,7 @@ func (cn *clientAndCh) ListenMsg(ctx context.Context) {
 			if ch, ok := subs[msgData.ToSessions[i].SessionId][msgData.ToSessions[i].Platform]; ok {
 				go func() {
 					timer := time.NewTimer(time.Second * 3)
+					defer timer.Stop()
 					select {
 					case ch.ch <- msgData.MetaData:
 						// println("send msg success")

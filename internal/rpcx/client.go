@@ -11,6 +11,7 @@ import (
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
 	cclient "github.com/rpcxio/rpcx-consul/client"
 	"github.com/smallnest/rpcx/client"
+	"github.com/smallnest/rpcx/protocol"
 	"github.com/smallnest/rpcx/share"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/trace"
@@ -145,6 +146,24 @@ func (c *RpcxClientWithOpt) GetOnce() (client.XClient, error) {
 		c.addTrace(xclient)
 	}
 	return xclient, nil
+}
+
+func (c *RpcxClientWithOpt) NewBidirectionalXClient(ch chan *protocol.Message) (client.XClient, error) {
+	var cliDiscovery client.ServiceDiscovery
+	var err error
+	if len(c.consulServers) != 0 {
+		cliDiscovery, err = cclient.NewConsulDiscovery(config.ServerPrefix, c.serviceName, c.consulServers, nil)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		cliDiscovery, err = client.NewPeer2PeerDiscovery(c.serverAddress, "")
+		if err != nil {
+			return nil, err
+		}
+	}
+	xclient := client.NewBidirectionalXClient(c.serviceName, client.Failtry, client.ConsistentHash, cliDiscovery, client.DefaultOption, ch)
+	return xclient, err
 }
 
 func (s *RpcxClientWithOpt) Close() error {

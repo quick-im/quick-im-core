@@ -3,6 +3,7 @@ package poll
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -44,6 +45,8 @@ func (p *pollProtoc) Handler(ctx context.Context) http.HandlerFunc {
 			w.WriteHeader(http.StatusNoContent)
 		case msg := <-ch:
 			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Println(msg)
 			encoder.Encode(msg)
 		}
 	}

@@ -128,7 +128,14 @@ func (r *rpcxServer) RegisterSession(ctx context.Context) registerSessionFn {
 		if _, ok := r.clientList.client[args.GatewayUuid]; ok {
 			// platforms := r.clientList.client[clientAddr].connMap[args.SessionId]
 			// 如果session存在该节点则直接注册
-			r.clientList.client[args.GatewayUuid].connMap[args.SessionId][args.Platform] = struct{}{}
+			if _, ok := r.clientList.client[args.GatewayUuid].connMap[args.SessionId]; ok {
+				r.clientList.client[args.GatewayUuid].connMap[args.SessionId][args.Platform] = struct{}{}
+			} else {
+				r.clientList.client[args.GatewayUuid].connMap[args.SessionId] = map[uint8]struct{}{
+					args.Platform: {},
+				}
+			}
+
 		} else {
 			// 如果不存在则重新注册
 			reply.NeedKeep = true // 告知客户端需要监听本链接
