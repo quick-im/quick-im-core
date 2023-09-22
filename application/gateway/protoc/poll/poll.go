@@ -29,11 +29,12 @@ func (p *pollProtoc) Handler(ctx context.Context) http.HandlerFunc {
 	log = helper.GetCtxValue(ctx, contant.CTX_LOGGER_KEY, log)
 	return func(w http.ResponseWriter, r *http.Request) {
 		encoder := json.NewEncoder(w)
-		ch, ok := msgpool.GetMsgChannel(claims.Sid, claims.Platform)
+		chWarp, ok := msgpool.GetMsgChannel(claims.Sid, claims.Platform)
 		if !ok {
 			log.Error("PollHandler: msg channel not found")
 			return
 		}
+		ch := chWarp.GetCh()
 		timer := time.NewTimer(time.Second * 30)
 		defer timer.Stop()
 		select {

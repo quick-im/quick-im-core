@@ -29,7 +29,13 @@ var cs = &clients{
 	ch:  make(chan *clientAndCh),
 }
 
-var subs = make(map[string]map[uint8]chan model.Msg)
+type chWarp struct {
+	sid      string
+	platform uint8
+	ch       chan model.Msg
+}
+
+var subs = make(map[string]map[uint8]chWarp)
 var lock = sync.RWMutex{}
 
 // 如果needKeep为true，请不要在外部关闭XClient
@@ -46,9 +52,13 @@ func RegisterTerm(ctx context.Context, c client.XClient, ch chan *protocol.Messa
 	// println(regSessionReply.NeedKeep)
 	lock.Lock()
 	if _, ok := subs[sid]; !ok {
-		subs[sid] = make(map[uint8]chan model.Msg)
+		subs[sid] = make(map[uint8]chWarp)
 	}
-	subs[sid][platform] = make(chan model.Msg)
+	subs[sid][platform] = chWarp{
+		sid:      sid,
+		platform: platform,
+		ch:       make(chan model.Msg),
+	}
 	lock.Unlock()
 	if regSessionReply.NeedKeep {
 		// 保持连接
@@ -66,16 +76,35 @@ func RegisterTerm(ctx context.Context, c client.XClient, ch chan *protocol.Messa
 	return needKeep, nil
 }
 
-func GetMsgChannel(sid string, platform uint8) (ch <-chan model.Msg, ok bool) {
+func GetMsgChannel(sid string, platform uint8) (ch chWarp, ok bool) {
 	lock.RLock()
 	defer lock.RUnlock()
 	if chs, ok := subs[sid]; ok {
 		if ch, ok := chs[platform]; ok {
-
 			return ch, ok
 		}
 	}
-	return nil, false
+	return chWarp{}, false
+}
+
+func (cch chWarp) UnRegistry() {
+	lock.Lock()
+	defer lock.Unlock()
+	if chs, ok := subs[cch.sid]; ok {
+		if c, ok := chs[cch.platform]; ok {
+			close(c.ch)
+			delete(chs, cch.platform)
+		}
+		if len(chs) == 0 {
+			delete(subs, cch.sid)
+			println("unregister", cch.sid, "-", cch.platform)
+		}
+	}
+
+}
+
+func (cch chWarp) GetCh() <-chan model.Msg {
+	return cch.ch
 }
 
 func RunMsgPollServer(ctx context.Context) {
@@ -103,7 +132,7 @@ func (cn *clientAndCh) ListenMsg(ctx context.Context) {
 		// 消息分发
 		for i := range msgData.ToSessions {
 			if ch, ok := subs[msgData.ToSessions[i].SessionId][msgData.ToSessions[i].Platform]; ok {
-				ch <- msgData.MetaData
+				ch.ch <- msgData.MetaData
 			}
 		}
 		lock.RUnlock()

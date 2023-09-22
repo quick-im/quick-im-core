@@ -38,11 +38,12 @@ func (s *sseProtoc) Handler(ctx context.Context) http.HandlerFunc {
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		ch, ok := msgpool.GetMsgChannel(claims.Sid, claims.Platform)
+		chWarp, ok := msgpool.GetMsgChannel(claims.Sid, claims.Platform)
 		if !ok {
 			log.Error("PollHandler: msg channel not found")
 			return
 		}
+		ch := chWarp.GetCh()
 		for {
 			msg := <-ch
 			data, err := json.Marshal(msg)

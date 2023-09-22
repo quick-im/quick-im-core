@@ -38,11 +38,12 @@ func (ws *wsProtoc) Handler(ctx context.Context) http.HandlerFunc {
 			return
 		}
 		defer conn.Close()
-		ch, ok := msgpool.GetMsgChannel(claims.Sid, claims.Platform)
+		chWarp, ok := msgpool.GetMsgChannel(claims.Sid, claims.Platform)
 		if !ok {
 			log.Error("WsHandler: msg channel not found")
 			return
 		}
+		ch := chWarp.GetCh()
 		for {
 			msg := ch
 			err := conn.WriteJSON(msg)
