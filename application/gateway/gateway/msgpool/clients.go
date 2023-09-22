@@ -3,6 +3,7 @@ package msgpool
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/quick-im/quick-im-core/internal/codec"
@@ -132,7 +133,17 @@ func (cn *clientAndCh) ListenMsg(ctx context.Context) {
 		// 消息分发
 		for i := range msgData.ToSessions {
 			if ch, ok := subs[msgData.ToSessions[i].SessionId][msgData.ToSessions[i].Platform]; ok {
-				ch.ch <- msgData.MetaData
+				go func() {
+					timer := time.NewTimer(time.Second * 3)
+					select {
+					case ch.ch <- msgData.MetaData:
+						// println("send msg success")
+						return
+					case <-timer.C:
+						println("send msg timeout")
+						return
+					}
+				}()
 			}
 		}
 		lock.RUnlock()
