@@ -43,6 +43,7 @@ func (s *sseProtoc) Handler(ctx context.Context) http.HandlerFunc {
 			log.Error("PollHandler: msg channel not found")
 			return
 		}
+		defer chWarp.UnRegistry()
 		ch := chWarp.GetCh()
 		for {
 			msg := <-ch

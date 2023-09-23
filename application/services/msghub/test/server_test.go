@@ -23,7 +23,7 @@ func TestSendMsg(t *testing.T) {
 		FromSession:    "0",
 		ConversationID: "87ba7679-b682-47e7-8499-0385dda22b66",
 		MsgType:        0,
-		Content:        []byte("哈哈哈哈哈1111"),
+		Content:        []byte("哈哈哈哈哈001222111111"),
 		SendTime:       time.Now(),
 	}
 	reply := msghub.SendMsgReply{}

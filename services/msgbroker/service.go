@@ -115,6 +115,7 @@ func (s *rpcxServer) Start(ctx context.Context) error {
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_BROADCAST_RECV, s.BroadcastRecv(ctx), "")
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_REGISTER_SESSION, s.RegisterSession(ctx), "")
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_KICKOUT_DUPLICATE, s.KickoutDuplicate(ctx), "")
+	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_UNREGISTER_SESSION, s.UnRegisterSession(ctx), "")
 	// s.logger.Info(s.serviceName, fmt.Sprintf("start at %s:%d", s.ip, s.port))
 	return ser.Serve("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
 }

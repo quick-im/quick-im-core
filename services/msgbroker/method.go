@@ -161,6 +161,31 @@ func (r *rpcxServer) RegisterSession(ctx context.Context) registerSessionFn {
 	}
 }
 
+type unRegisterSessionFn func(context.Context, RegisterSessionInfo, *RegisterSessionReply) error
+
+// 取消session注册
+func (r *rpcxServer) UnRegisterSession(ctx context.Context) unRegisterSessionFn {
+	return func(ctx context.Context, args RegisterSessionInfo, reply *RegisterSessionReply) error {
+
+		r.clientList.lock.Lock()
+		defer r.clientList.lock.Unlock()
+		if _, ok := r.clientList.client[args.GatewayUuid]; ok {
+			// platforms := r.clientList.client[clientAddr].connMap[args.SessionId]
+			// 如果session存在该节点则直接取消注册
+			if _, ok := r.clientList.client[args.GatewayUuid].connMap[args.SessionId]; ok {
+				delete(r.clientList.client[args.GatewayUuid].connMap[args.SessionId], args.Platform)
+			}
+
+		}
+		// 删除session与网关的关联
+		if _, ok := r.clientList.sessonIndex[args.SessionId]; ok {
+			delete(r.clientList.sessonIndex[args.SessionId], args.Platform)
+		}
+		//
+		return nil
+	}
+}
+
 type kickoutDuplicateFn = registerSessionFn
 
 func (r *rpcxServer) KickoutDuplicate(ctx context.Context) kickoutDuplicateFn {

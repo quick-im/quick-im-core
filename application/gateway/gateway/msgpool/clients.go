@@ -41,6 +41,16 @@ var lock = sync.RWMutex{}
 
 // 如果needKeep为true，请不要在外部关闭XClient
 func RegisterTerm(ctx context.Context, c client.XClient, ch chan *protocol.Message, sid string, platform uint8) (needKeep bool, err error) {
+	lock.RLock()
+	// 如果客户端channel已存在，就不要再去重复注册了
+	// TODO: 这里会影响重复登录后的主动踢出已登陆客户端逻辑，主要是长轮询的场景中会反复断开重连
+	// 修复方法1：msgbroker增加unregister逻辑
+	if _, ok := subs[sid]; ok {
+		if _, ok := subs[sid][platform]; ok {
+			return false, nil
+		}
+	}
+	lock.RUnlock()
 	regSessionArgs := msgbroker.RegisterSessionInfo{
 		Platform:    platform,
 		GatewayUuid: cs.gid,
@@ -54,11 +64,11 @@ func RegisterTerm(ctx context.Context, c client.XClient, ch chan *protocol.Messa
 	lock.Lock()
 	if _, ok := subs[sid]; !ok {
 		subs[sid] = make(map[uint8]chWarp)
-	}
-	subs[sid][platform] = chWarp{
-		sid:      sid,
-		platform: platform,
-		ch:       make(chan model.Msg),
+		subs[sid][platform] = chWarp{
+			sid:      sid,
+			platform: platform,
+			ch:       make(chan model.Msg),
+		}
 	}
 	lock.Unlock()
 	if regSessionReply.NeedKeep {
@@ -89,20 +99,20 @@ func GetMsgChannel(sid string, platform uint8) (ch chWarp, ok bool) {
 	return chWarp{}, false
 }
 
+// TODO: 因keepalive的原因，poll协议的http的ctx.Done不会马上关闭，这里可能会出现一些问题
 func (cch chWarp) UnRegistry() {
-	lock.Lock()
-	defer lock.Unlock()
-	if chs, ok := subs[cch.sid]; ok {
-		if c, ok := chs[cch.platform]; ok {
-			close(c.ch)
-			delete(chs, cch.platform)
-		}
-		if len(chs) == 0 {
-			delete(subs, cch.sid)
-			println("unregister", cch.sid, "-", cch.platform)
-		}
-	}
-
+	// lock.Lock()
+	// defer lock.Unlock()
+	// if chs, ok := subs[cch.sid]; ok {
+	// 	if c, ok := chs[cch.platform]; ok {
+	// 		close(c.ch)
+	// 		delete(chs, cch.platform)
+	// 	}
+	// 	if len(chs) == 0 {
+	// 		delete(subs, cch.sid)
+	// 		println("unregister", cch.sid, "-", cch.platform)
+	// 	}
+	// }
 }
 
 func (cch chWarp) GetCh() <-chan model.Msg {
@@ -125,9 +135,18 @@ func (cn *clientAndCh) ListenMsg(ctx context.Context) {
 	defer cn.c.Close()
 	msgData := msgbroker.BroadcastMsgWarp{}
 	codec := codec.GobUtils[msgbroker.BroadcastMsgWarp]{}
-	for msg := range cn.ch {
+	var msg *protocol.Message
+	var ok bool
+	for {
+		msg, ok = <-cn.ch
+		if !ok {
+			return
+		}
 		if err := codec.Decode(msg.Payload, &msgData); err != nil {
 			println("Decode Msg Failed: ", err)
+			continue
+		}
+		if msgData.Action == msgbroker.Heartbeat {
 			continue
 		}
 		lock.RLock()
@@ -139,9 +158,9 @@ func (cn *clientAndCh) ListenMsg(ctx context.Context) {
 					defer timer.Stop()
 					select {
 					case ch.ch <- msgData.MetaData:
-						// println("send msg success")
 						return
 					case <-timer.C:
+						// TODO: 考虑是否在此处处理心跳包，以便于踢出超时的客户端
 						println("send msg timeout")
 						return
 					}

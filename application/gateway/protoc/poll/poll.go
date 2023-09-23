@@ -35,19 +35,21 @@ func (p *pollProtoc) Handler(ctx context.Context) http.HandlerFunc {
 			log.Error("PollHandler: msg channel not found")
 			return
 		}
+		defer chWarp.UnRegistry()
 		ch := chWarp.GetCh()
 		timer := time.NewTimer(time.Second * 30)
 		defer timer.Stop()
 		select {
 		case <-timer.C:
 			w.WriteHeader(http.StatusNoContent)
-		case <-ctx.Done():
+		case <-r.Context().Done():
 			w.WriteHeader(http.StatusNoContent)
 		case msg := <-ch:
 			w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Println(msg)
-			encoder.Encode(msg)
+			_ = encoder.Encode(msg)
+			return
 		}
 	}
 }
