@@ -72,9 +72,12 @@ func (s *rpcxServer) CreateConversation(ctx context.Context) createConversationF
 }
 
 // 加入会话
-type JoinConversationArgs = CreateConversationArgs
+type JoinConversationArgs struct {
+	ConversationID string
+	SessionList    []string
+}
 type JoinConversationReply = CreateConversationReply
-type JoinConversationFn createConversationFn
+type JoinConversationFn func(context.Context, JoinConversationArgs, *JoinConversationReply) error
 
 func (s *rpcxServer) JoinConversation(ctx context.Context) JoinConversationFn {
 	var ctxDb contant.PgCtxType
@@ -91,7 +94,7 @@ func (s *rpcxServer) JoinConversation(ctx context.Context) JoinConversationFn {
 		for i := range args.SessionList {
 			sessions[i] = db.SessionJoinsConversationUseCopyFromParams{
 				SessionID:      args.SessionList[i],
-				ConversationID: reply.ConversationID,
+				ConversationID: args.ConversationID,
 			}
 		}
 		if _, err := dbObj.SessionJoinsConversationUseCopyFrom(ctx, sessions); err != nil {

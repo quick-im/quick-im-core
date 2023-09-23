@@ -60,8 +60,22 @@ func (a *apiServer) InitAndStartServer(ctx context.Context) {
 		// Adjust status code to 204
 		w.WriteHeader(http.StatusNoContent)
 	})
+	// 公开接口
+	// conversation部分
 	router.HandlerFunc("GET", "/notify", middleware.JwtAuth(ctx, access.NotifyHandler))
 	router.HandlerFunc("POST", "/send_msg", middleware.JwtAuth(ctx, access.SendMsgHandler))
+	router.HandlerFunc("POST", "/check_joined_conversation", middleware.JwtAuth(ctx, access.CheckJoinedConversation))
+	router.HandlerFunc("GET", "/get_joined_conversation", middleware.JwtAuth(ctx, access.GetJoinedConversation))
+	router.HandlerFunc("POST", "/get_conversation_detail", middleware.JwtAuth(ctx, access.GetConversationInfo))
+	router.HandlerFunc("POST", "/join_conversation", middleware.JwtAuth(ctx, access.JoinConversation))
+	router.HandlerFunc("POST", "/create_conversation", middleware.JwtAuth(ctx, access.CreateConversation))
+	router.HandlerFunc("POST", "/leave_conversation", middleware.JwtAuth(ctx, access.LeaveConversation))
+	router.HandlerFunc("POST", "/create_conversation", middleware.JwtAuth(ctx, access.CreateConversation))
+	// 受保护的接口
+	//conversation部分
+	router.HandlerFunc("POST", "/create_conversation", middleware.ProtectApi(ctx, access.CreateConversationInner))
+	router.HandlerFunc("POST", "/kickout_conversation", middleware.ProtectApi(ctx, access.KickoutConversationInner))
+	router.HandlerFunc("POST", "/join_conversation", middleware.ProtectApi(ctx, access.JoinConversationInner))
 	router.HandlerFunc("GET", "/", middleware.AllowCros(ctx, func(w http.ResponseWriter, r *http.Request) {
 		w.Write(Data)
 	}))

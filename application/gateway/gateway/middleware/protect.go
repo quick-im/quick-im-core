@@ -10,8 +10,10 @@ import (
 	"github.com/quick-im/quick-im-core/internal/quickerr"
 )
 
+type ProtectHandlerFunc func(ctx context.Context) http.HandlerFunc
+
 // 用于通过IP白名单保护一些接口
-func ProtectApi(ctx context.Context, h http.HandlerFunc) http.HandlerFunc {
+func ProtectApi(ctx context.Context, h ProtectHandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		coder := json.NewEncoder(w)
 		host, _, err := net.SplitHostPort(r.RemoteAddr)
