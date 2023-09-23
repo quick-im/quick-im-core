@@ -70,12 +70,11 @@ func (a *apiServer) InitAndStartServer(ctx context.Context) {
 	router.HandlerFunc("POST", "/join_conversation", middleware.JwtAuth(ctx, access.JoinConversation))
 	router.HandlerFunc("POST", "/create_conversation", middleware.JwtAuth(ctx, access.CreateConversation))
 	router.HandlerFunc("POST", "/leave_conversation", middleware.JwtAuth(ctx, access.LeaveConversation))
-	router.HandlerFunc("POST", "/create_conversation", middleware.JwtAuth(ctx, access.CreateConversation))
 	// 受保护的接口
 	//conversation部分
-	router.HandlerFunc("POST", "/create_conversation", middleware.ProtectApi(ctx, access.CreateConversationInner))
-	router.HandlerFunc("POST", "/kickout_conversation", middleware.ProtectApi(ctx, access.KickoutConversationInner))
-	router.HandlerFunc("POST", "/join_conversation", middleware.ProtectApi(ctx, access.JoinConversationInner))
+	router.HandlerFunc("POST", "/inner/create_conversation", middleware.ProtectApi(ctx, access.CreateConversationInner))
+	router.HandlerFunc("POST", "/inner/kickout_conversation", middleware.ProtectApi(ctx, access.KickoutConversationInner))
+	router.HandlerFunc("POST", "/inner/join_conversation", middleware.ProtectApi(ctx, access.JoinConversationInner))
 	router.HandlerFunc("GET", "/", middleware.AllowCros(ctx, func(w http.ResponseWriter, r *http.Request) {
 		w.Write(Data)
 	}))
