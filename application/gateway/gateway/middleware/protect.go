@@ -30,6 +30,6 @@ func ProtectApi(ctx context.Context, h ProtectHandlerFunc) http.HandlerFunc {
 		if !pass {
 			coder.Encode(quickerr.ErrNotAllowedRequest)
 		}
-		h(w, r)
+		h(ctx)(w, r)
 	}
 }
