@@ -161,7 +161,7 @@ type getThe30MsgBeforeTheIdArgs struct {
 	Desc           bool   `json:"desc"`
 }
 
-// 获取指定会话某个消息id之后的30条消息
+// 获取指定会话某个消息id之前的30条消息
 func GetThe30MsgBeforeTheId(ctx context.Context) http.HandlerFunc {
 	persistenceService := helper.GetCtxValue(ctx, contant.CTX_SERVICE_PERSISTENCE, &rpcx.RpcxClientWithOpt{})
 	claims := helper.GetCtxValue(ctx, contant.HTTP_CTX_JWT_CLAIMS, contant.JWTClaimsCtxType)
