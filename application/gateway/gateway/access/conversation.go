@@ -16,6 +16,37 @@ import (
 	"github.com/quick-im/quick-im-core/services/msgid"
 )
 
+type getConversationLastOneId struct {
+	ConversationID string `json:"conversation_id"`
+}
+
+func GetConversationLastOneId(ctx context.Context) http.HandlerFunc {
+	conversationService := helper.GetCtxValue(ctx, contant.CTX_SERVICE_CONVERSATION, &rpcx.RpcxClientWithOpt{})
+	claims := helper.GetCtxValue(ctx, contant.HTTP_CTX_JWT_CLAIMS, contant.JWTClaimsCtxType)
+	_ = claims
+	var log logger.Logger
+	log = helper.GetCtxValue(ctx, contant.CTX_LOGGER_KEY, log)
+	return func(w http.ResponseWriter, r *http.Request) {
+		clientArgs := getConversationLastOneId{}
+		encoder := json.NewEncoder(w)
+		if err := json.NewDecoder(r.Body).Decode(&clientArgs); err != nil {
+			log.Error("Gateway method: GetConversationLastOneId ,err: ", err.Error())
+			_ = encoder.Encode(quickerr.ErrHttpInvaildParam)
+			return
+		}
+		conversationInfoArgs := conversation.GetLastOneMsgIdFromDbArgs{
+			ConversationID: clientArgs.ConversationID,
+		}
+		conversationInfoReply := conversation.GetLastOneMsgIdFromDbReply{}
+		if err := conversationService.Call(ctx, conversation.SERVICE_GET_LASTONE_MSGID_FROM_DB, conversationInfoArgs, &conversationInfoReply); err != nil {
+			log.Error("Gateway method: GetConversationLastOneId Fn conversationService.Call:conversation.SERVICE_GET_LASTONE_MSGID_FROM_DB ,err: ", err.Error())
+			_ = encoder.Encode(quickerr.ErrInternalServiceCallFailed)
+			return
+		}
+		_ = encoder.Encode(quickerr.HttpResponeWarp(conversationInfoReply))
+	}
+}
+
 type getConversationInfoArgs struct {
 	ConversationID string `json:"conversation_id"`
 }
@@ -341,5 +372,37 @@ func KickoutConversationInner(ctx context.Context) http.HandlerFunc {
 			return
 		}
 		_ = encoder.Encode(quickerr.HttpResponeWarp(leaveConversationReply))
+	}
+}
+
+type ArchiveConversationArgs struct {
+	ConversationIDS []string `json:"conversation_ids"`
+	IsArchive       bool     `json:"is_archive"`
+}
+
+// 内部接口,归档会话
+func ArchiveConversationInner(ctx context.Context) http.HandlerFunc {
+	conversationService := helper.GetCtxValue(ctx, contant.CTX_SERVICE_CONVERSATION, &rpcx.RpcxClientWithOpt{})
+	var log logger.Logger
+	log = helper.GetCtxValue(ctx, contant.CTX_LOGGER_KEY, log)
+	return func(w http.ResponseWriter, r *http.Request) {
+		clientArgs := ArchiveConversationArgs{}
+		encoder := json.NewEncoder(w)
+		if err := json.NewDecoder(r.Body).Decode(&clientArgs); err != nil {
+			log.Error("Gateway method: ArchiveConversationInner ,err: ", err.Error())
+			_ = encoder.Encode(quickerr.ErrHttpInvaildParam)
+			return
+		}
+		archiveConversationArgs := conversation.SetArchiveConversationsArgs{
+			ConversationId: clientArgs.ConversationIDS,
+			IsArchive:      clientArgs.IsArchive,
+		}
+		archiveConversationReply := conversation.SetArchiveConversationsReply{}
+		if err := conversationService.Call(ctx, conversation.SERVICE_ARCHIVE_CONVERSATIONS, archiveConversationArgs, &archiveConversationReply); err != nil {
+			log.Error("Gateway method: ArchiveConversationInner Fn conversationService.Call:conversation.SERVICE_ARCHIVE_CONVERSATIONS ,err: ", err.Error())
+			_ = encoder.Encode(quickerr.ErrInternalServiceCallFailed)
+			return
+		}
+		_ = encoder.Encode(quickerr.HttpResponeWarp(archiveConversationReply))
 	}
 }

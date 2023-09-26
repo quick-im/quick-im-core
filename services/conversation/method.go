@@ -248,7 +248,7 @@ func (r *rpcxServer) GetConversationInfo(ctx context.Context) GetConversationInf
 	}
 }
 
-// 删除会话
+// 删除会话（解散，通知到所有用户）
 type SetDeleteConversationArgs struct {
 	ConversationId []string
 }
