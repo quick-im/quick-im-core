@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 
+	"github.com/quick-im/quick-im-core/internal/db"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -62,4 +63,14 @@ func (a *adapter) SyncConversationLastMsgId(conversationId, msgId string) error 
 
 func (a *adapter) GetConversationLastMsgId(conversationId string) (string, error) {
 	return a.Client.Get(context.Background(), conversationId).Result()
+}
+
+func (a *adapter) SetConversationInfo(conversationId string, info db.Conversation) error {
+	panic("todo impl")
+}
+func (a *adapter) GetConversationInfo(conversationId string) (db.Conversation, error) {
+	panic("todo impl")
+}
+func (a *adapter) UnSetConversationInfo(conversationId string) error {
+	panic("todo impl")
 }

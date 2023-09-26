@@ -15,6 +15,9 @@ import (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 }
 
 type wsProtoc struct {
@@ -46,7 +49,7 @@ func (ws *wsProtoc) Handler(ctx context.Context) http.HandlerFunc {
 		defer chWarp.UnRegistry()
 		ch := chWarp.GetCh()
 		for {
-			msg := ch
+			msg := <-ch
 			err := conn.WriteJSON(msg)
 			if err != nil {
 				log.Error("Gateway method: WsHandler conn.WriteJSON,err: ", err.Error())

@@ -234,6 +234,9 @@ func (r *rpcxServer) GetConversationInfo(ctx context.Context) GetConversationInf
 	var ctxDb contant.PgCtxType
 	ctxDb = helper.GetCtxValue(ctx, contant.CTX_POSTGRES_KEY, ctxDb)
 	dbObj := db.New(ctxDb)
+	var cacheDb contant.CacheCtxType
+	cacheDb = helper.GetCtxValue(ctx, contant.CTX_CACHE_DB_KEY, cacheDb)
+	_ = cacheDb
 	return func(ctx context.Context, args GetConversationInfoArgs, reply *GetConversationInfoReply) error {
 		info, err := dbObj.GetConversationInfo(ctx, args.ConversationId)
 		if err != nil {
@@ -260,6 +263,9 @@ func (r *rpcxServer) SetDeleteConversation(ctx context.Context) SetDeleteConvers
 	var ctxDb contant.PgCtxType
 	ctxDb = helper.GetCtxValue(ctx, contant.CTX_POSTGRES_KEY, ctxDb)
 	dbObj := db.New(ctxDb)
+	var cacheDb contant.CacheCtxType
+	cacheDb = helper.GetCtxValue(ctx, contant.CTX_CACHE_DB_KEY, cacheDb)
+	_ = cacheDb
 	return func(ctx context.Context, args SetDeleteConversationArgs, reply *SetDeleteConversationReply) error {
 		dbObj.DeleteConversations(ctx, args.ConversationId).Exec(func(i int, err error) {
 			if err != nil {
@@ -290,6 +296,9 @@ func (r *rpcxServer) SetArchiveConversations(ctx context.Context) SetArchiveConv
 	var ctxDb contant.PgCtxType
 	ctxDb = helper.GetCtxValue(ctx, contant.CTX_POSTGRES_KEY, ctxDb)
 	dbObj := db.New(ctxDb)
+	var cacheDb contant.CacheCtxType
+	cacheDb = helper.GetCtxValue(ctx, contant.CTX_CACHE_DB_KEY, cacheDb)
+	_ = cacheDb
 	return func(ctx context.Context, args SetArchiveConversationsArgs, reply *SetArchiveConversationsReply) error {
 		if args.IsArchive {
 			dbObj.ArchiveConversations(ctx, args.ConversationId).Exec(func(i int, err error) {
