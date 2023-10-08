@@ -75,6 +75,7 @@ func (a *apiServer) InitAndStartServer(ctx context.Context) {
 	router.HandlerFunc("POST", "/get_lastone_msgid", middleware.JwtAuth(ctx, access.GetConversationLastOneId))
 	// 受保护的接口
 	//conversation部分
+	router.HandlerFunc("POST", "/inner/get_token", middleware.ProtectApi(ctx, access.GetTokenBySessionInner))
 	router.HandlerFunc("POST", "/inner/create_conversation", middleware.ProtectApi(ctx, access.CreateConversationInner))
 	router.HandlerFunc("POST", "/inner/kickout_conversation", middleware.ProtectApi(ctx, access.KickoutConversationInner))
 	router.HandlerFunc("POST", "/inner/join_conversation", middleware.ProtectApi(ctx, access.JoinConversationInner))

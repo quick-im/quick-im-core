@@ -8,6 +8,7 @@ import (
 
 	"github.com/quick-im/quick-im-core/internal/contant"
 	"github.com/quick-im/quick-im-core/internal/helper"
+	"github.com/quick-im/quick-im-core/internal/jwt"
 	"github.com/quick-im/quick-im-core/internal/logger"
 	"github.com/quick-im/quick-im-core/internal/quickerr"
 	"github.com/quick-im/quick-im-core/internal/rpcx"
@@ -15,6 +16,32 @@ import (
 	"github.com/quick-im/quick-im-core/services/msghub"
 	"github.com/quick-im/quick-im-core/services/msgid"
 )
+
+type getTokenArgs struct {
+	Session  string `json:"session"`
+	Platform uint8  `json:"platform"`
+}
+
+func GetTokenBySessionInner(ctx context.Context) http.HandlerFunc {
+	var log logger.Logger
+	log = helper.GetCtxValue(ctx, contant.CTX_LOGGER_KEY, log)
+	return func(w http.ResponseWriter, r *http.Request) {
+		clientArgs := getTokenArgs{}
+		encoder := json.NewEncoder(w)
+		if err := json.NewDecoder(r.Body).Decode(&clientArgs); err != nil {
+			log.Error("Gateway method: GetTokenBySessionInner ,err: ", err.Error())
+			_ = encoder.Encode(quickerr.ErrHttpInvaildParam)
+			return
+		}
+		token, err := jwt.ReleaseToken(clientArgs.Session, clientArgs.Platform)
+		if err != nil {
+			log.Error("Gateway method: GetTokenBySessionInner ,err: ", err.Error())
+			_ = encoder.Encode(quickerr.ErrHttpInvaildParam)
+			return
+		}
+		_ = encoder.Encode(quickerr.HttpResponeWarp(token))
+	}
+}
 
 type getConversationLastOneId struct {
 	ConversationID string `json:"conversation_id"`
