@@ -9,7 +9,7 @@ import (
 )
 
 func TestServer(t *testing.T) {
-	d, err := client.NewPeer2PeerDiscovery("tcp@127.0.0.1:8019", "")
+	d, err := client.NewPeer2PeerDiscovery("tcp@127.0.0.1:8016", "")
 	if err != nil {
 		t.Error(err)
 	}

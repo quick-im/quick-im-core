@@ -1,6 +1,8 @@
 package config
 
-import "net"
+import (
+	"net"
+)
 
 const (
 	// 接口通信密钥

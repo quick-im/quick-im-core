@@ -35,7 +35,7 @@ func (r *rpcxServer) listenMsg(ctx context.Context, nc *messaging.NatsWarp) {
 		msg.Ack()
 	}, nats.DeliverLast())
 	if err != nil {
-		r.logger.Warn("ListenMsg Err", err.Error())
+		r.GetLogger().Warn("ListenMsg Err", err.Error())
 	}
 	defer sub.Unsubscribe()
 	select {}

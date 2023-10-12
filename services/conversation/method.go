@@ -36,13 +36,14 @@ func (s *rpcxServer) CreateConversation(ctx context.Context) createConversationF
 	dbObj := db.New(ctxDb)
 	var cacheDb contant.CacheCtxType
 	cacheDb = helper.GetCtxValue(ctx, contant.CTX_CACHE_DB_KEY, cacheDb)
+	logger := s.GetLogger()
 	return func(ctx context.Context, args CreateConversationArgs, reply *CreateConversationReply) error {
 		if args.ConversationType > conversationTypeMax {
-			s.logger.Error("CreateConversation ConversationType Err", "CreateConversationArgsType:", fmt.Sprintf("%d", args.ConversationType))
+			logger.Error("CreateConversation ConversationType Err", "CreateConversationArgsType:", fmt.Sprintf("%d", args.ConversationType))
 			return quickerr.ErrConversationTypeRange
 		}
 		if len(args.SessionList) < 1 {
-			s.logger.Error("CreateConversation ConversationNumberRange Err", "args:", fmt.Sprintf("%+v", args))
+			logger.Error("CreateConversation ConversationNumberRange Err", "args:", fmt.Sprintf("%+v", args))
 			return quickerr.ErrConversationNumberRange
 		}
 		reply.ConversationID = uuid.New().String()
@@ -50,7 +51,7 @@ func (s *rpcxServer) CreateConversation(ctx context.Context) createConversationF
 			ConversationID:   reply.ConversationID,
 			ConversationType: int64(args.ConversationType),
 		}); err != nil {
-			s.logger.Error("CreateConversation dbObj.CreateConversation Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			logger.Error("CreateConversation dbObj.CreateConversation Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
 		sessions := make([]db.SessionJoinsConversationUseCopyFromParams, len(args.SessionList))
@@ -61,11 +62,11 @@ func (s *rpcxServer) CreateConversation(ctx context.Context) createConversationF
 			}
 		}
 		if _, err := dbObj.SessionJoinsConversationUseCopyFrom(ctx, sessions); err != nil {
-			s.logger.Error("CreateConversation dbObj.SessionJoinsConversationUseCopyFrom Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			logger.Error("CreateConversation dbObj.SessionJoinsConversationUseCopyFrom Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
 		if err := cacheDb.AddConversationSessions(reply.ConversationID, args.SessionList); err != nil {
-			s.logger.Error("CreateConversation cacheDb.AddConverstaionSessions Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			logger.Error("CreateConversation cacheDb.AddConverstaionSessions Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 		}
 		return nil
 	}
@@ -85,9 +86,10 @@ func (s *rpcxServer) JoinConversation(ctx context.Context) JoinConversationFn {
 	dbObj := db.New(ctxDb)
 	var cacheDb contant.CacheCtxType
 	cacheDb = helper.GetCtxValue(ctx, contant.CTX_CACHE_DB_KEY, cacheDb)
+	logger := s.GetLogger()
 	return func(ctx context.Context, args JoinConversationArgs, reply *JoinConversationReply) error {
 		if len(args.SessionList) < 1 {
-			s.logger.Error("JoinConversation ConversationNumberRange Err", "args:", fmt.Sprintf("%+v", args))
+			logger.Error("JoinConversation ConversationNumberRange Err", "args:", fmt.Sprintf("%+v", args))
 			return quickerr.ErrConversationNumberRange
 		}
 		sessions := make([]db.SessionJoinsConversationUseCopyFromParams, len(args.SessionList))
@@ -98,11 +100,11 @@ func (s *rpcxServer) JoinConversation(ctx context.Context) JoinConversationFn {
 			}
 		}
 		if _, err := dbObj.SessionJoinsConversationUseCopyFrom(ctx, sessions); err != nil {
-			s.logger.Error("JoinConversation dbObj.SessionJoinsConversationUseCopyFrom Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			logger.Error("JoinConversation dbObj.SessionJoinsConversationUseCopyFrom Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
 		if err := cacheDb.AddConversationSessions(reply.ConversationID, args.SessionList); err != nil {
-			s.logger.Error("JoinConversation cacheDb.AddConverstaionSessions Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			logger.Error("JoinConversation cacheDb.AddConverstaionSessions Err", "err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 		}
 		return nil
 	}
@@ -119,14 +121,15 @@ type GetJoinedConversationsReply struct {
 
 type getJoinedConversationsFn func(ctx context.Context, args GetJoinedConversationsArgs, reply *GetJoinedConversationsReply) error
 
-func (r *rpcxServer) GetJoinedConversations(ctx context.Context) getJoinedConversationsFn {
+func (s *rpcxServer) GetJoinedConversations(ctx context.Context) getJoinedConversationsFn {
 	var ctxDb contant.PgCtxType
 	ctxDb = helper.GetCtxValue(ctx, contant.CTX_POSTGRES_KEY, ctxDb)
 	dbObj := db.New(ctxDb)
+	logger := s.GetLogger()
 	return func(ctx context.Context, args GetJoinedConversationsArgs, reply *GetJoinedConversationsReply) error {
 		list, err := dbObj.GetJoinedConversations(ctx, args.SessionId)
 		if err != nil {
-			r.logger.Error("GetJoinedConversations dbObj.GetJoinedConversations Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			logger.Error("GetJoinedConversations dbObj.GetJoinedConversations Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
 		reply.Conversations = make([]string, len(list))
@@ -149,17 +152,18 @@ type CheckJoinedConversationReply struct {
 
 type checkJoinedConversationFn func(ctx context.Context, args CheckJoinedConversationArgs, reply *CheckJoinedConversationReply) error
 
-func (r *rpcxServer) CheckJoinedConversation(ctx context.Context) checkJoinedConversationFn {
+func (s *rpcxServer) CheckJoinedConversation(ctx context.Context) checkJoinedConversationFn {
 	var ctxDb contant.PgCtxType
 	ctxDb = helper.GetCtxValue(ctx, contant.CTX_POSTGRES_KEY, ctxDb)
 	dbObj := db.New(ctxDb)
 	var cacheDb contant.CacheCtxType
 	cacheDb = helper.GetCtxValue(ctx, contant.CTX_CACHE_DB_KEY, cacheDb)
+	logger := s.GetLogger()
 	return func(ctx context.Context, args CheckJoinedConversationArgs, reply *CheckJoinedConversationReply) error {
 		reply.Joined = false
 		isExists, err := cacheDb.IsExistsInConversation(args.ConversationId, args.SessionId)
 		if err != nil {
-			r.logger.Error("CheckJoinedConversation cacheDb.IsExistsInConversation Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			logger.Error("CheckJoinedConversation cacheDb.IsExistsInConversation Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 		} else {
 			reply.Joined = isExists
 			return nil
@@ -169,7 +173,7 @@ func (r *rpcxServer) CheckJoinedConversation(ctx context.Context) checkJoinedCon
 			ConversationID: args.ConversationId,
 		})
 		if err != nil {
-			r.logger.Error("CheckJoinedConversation dbObj.CheckJoinedonversation Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			logger.Error("CheckJoinedConversation dbObj.CheckJoinedonversation Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
 		if n > 0 {
@@ -191,12 +195,13 @@ type KickoutForConversationReply struct {
 
 type kickoutJoinedConversationFn func(ctx context.Context, args KickoutForConversationArgs, reply *KickoutForConversationReply) error
 
-func (r *rpcxServer) KickoutForConversation(ctx context.Context) kickoutJoinedConversationFn {
+func (s *rpcxServer) KickoutForConversation(ctx context.Context) kickoutJoinedConversationFn {
 	var ctxDb contant.PgCtxType
 	ctxDb = helper.GetCtxValue(ctx, contant.CTX_POSTGRES_KEY, ctxDb)
 	dbObj := db.New(ctxDb)
 	var cacheDb contant.CacheCtxType
 	cacheDb = helper.GetCtxValue(ctx, contant.CTX_CACHE_DB_KEY, cacheDb)
+	logger := s.GetLogger()
 	return func(ctx context.Context, args KickoutForConversationArgs, reply *KickoutForConversationReply) error {
 		params := make([]db.KickoutForConversationParams, len(args.SessionId))
 		for i := range args.SessionId {
@@ -209,11 +214,11 @@ func (r *rpcxServer) KickoutForConversation(ctx context.Context) kickoutJoinedCo
 					reply.Failed = make([]string, 0)
 				}
 				reply.Failed = append(reply.Failed, args.SessionId[i])
-				r.logger.Error("KickoutForConversation dbObj.KickoutForConversation Err:", fmt.Sprintf("record: %d,arg: %+v", i, params[i]), " err:", err.Error())
+				logger.Error("KickoutForConversation dbObj.KickoutForConversation Err:", fmt.Sprintf("record: %d,arg: %+v", i, params[i]), " err:", err.Error())
 			}
 		})
 		if err := cacheDb.DelConversationSession(args.ConversationId, args.SessionId); err != nil {
-			r.logger.Error("KickoutForConversation cacheDb.DelConversationSession Err:", err.Error())
+			logger.Error("KickoutForConversation cacheDb.DelConversationSession Err:", err.Error())
 		}
 		return nil
 	}
@@ -230,17 +235,18 @@ type GetConversationInfoReply struct {
 
 type GetConversationInfoFn func(ctx context.Context, args GetConversationInfoArgs, reply *GetConversationInfoReply) error
 
-func (r *rpcxServer) GetConversationInfo(ctx context.Context) GetConversationInfoFn {
+func (s *rpcxServer) GetConversationInfo(ctx context.Context) GetConversationInfoFn {
 	var ctxDb contant.PgCtxType
 	ctxDb = helper.GetCtxValue(ctx, contant.CTX_POSTGRES_KEY, ctxDb)
 	dbObj := db.New(ctxDb)
 	var cacheDb contant.CacheCtxType
 	cacheDb = helper.GetCtxValue(ctx, contant.CTX_CACHE_DB_KEY, cacheDb)
 	_ = cacheDb
+	logger := s.GetLogger()
 	return func(ctx context.Context, args GetConversationInfoArgs, reply *GetConversationInfoReply) error {
 		info, err := dbObj.GetConversationInfo(ctx, args.ConversationId)
 		if err != nil {
-			r.logger.Error("GetConversationInfo dbObj.GetConversationInfo Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			logger.Error("GetConversationInfo dbObj.GetConversationInfo Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
 		reply.Conversation = info
@@ -259,13 +265,14 @@ type SetDeleteConversationReply struct {
 
 type SetDeleteConversationFn func(ctx context.Context, args SetDeleteConversationArgs, reply *SetDeleteConversationReply) error
 
-func (r *rpcxServer) SetDeleteConversation(ctx context.Context) SetDeleteConversationFn {
+func (s *rpcxServer) SetDeleteConversation(ctx context.Context) SetDeleteConversationFn {
 	var ctxDb contant.PgCtxType
 	ctxDb = helper.GetCtxValue(ctx, contant.CTX_POSTGRES_KEY, ctxDb)
 	dbObj := db.New(ctxDb)
 	var cacheDb contant.CacheCtxType
 	cacheDb = helper.GetCtxValue(ctx, contant.CTX_CACHE_DB_KEY, cacheDb)
 	_ = cacheDb
+	logger := s.GetLogger()
 	return func(ctx context.Context, args SetDeleteConversationArgs, reply *SetDeleteConversationReply) error {
 		dbObj.DeleteConversations(ctx, args.ConversationId).Exec(func(i int, err error) {
 			if err != nil {
@@ -273,7 +280,7 @@ func (r *rpcxServer) SetDeleteConversation(ctx context.Context) SetDeleteConvers
 					reply.Failed = make([]string, 0)
 				}
 				reply.Failed = append(reply.Failed, args.ConversationId[i])
-				r.logger.Error("SetDeleteConversation dbObj.DeleteConversations Err:", fmt.Sprintf("record: %d,arg: %+v", i, args.ConversationId[i]), " err:", err.Error())
+				logger.Error("SetDeleteConversation dbObj.DeleteConversations Err:", fmt.Sprintf("record: %d,arg: %+v", i, args.ConversationId[i]), " err:", err.Error())
 			}
 		})
 		return nil
@@ -292,13 +299,14 @@ type SetArchiveConversationsReply struct {
 
 type SetArchiveConversationsFn func(ctx context.Context, args SetArchiveConversationsArgs, reply *SetArchiveConversationsReply) error
 
-func (r *rpcxServer) SetArchiveConversations(ctx context.Context) SetArchiveConversationsFn {
+func (s *rpcxServer) SetArchiveConversations(ctx context.Context) SetArchiveConversationsFn {
 	var ctxDb contant.PgCtxType
 	ctxDb = helper.GetCtxValue(ctx, contant.CTX_POSTGRES_KEY, ctxDb)
 	dbObj := db.New(ctxDb)
 	var cacheDb contant.CacheCtxType
 	cacheDb = helper.GetCtxValue(ctx, contant.CTX_CACHE_DB_KEY, cacheDb)
 	_ = cacheDb
+	logger := s.GetLogger()
 	return func(ctx context.Context, args SetArchiveConversationsArgs, reply *SetArchiveConversationsReply) error {
 		if args.IsArchive {
 			dbObj.ArchiveConversations(ctx, args.ConversationId).Exec(func(i int, err error) {
@@ -307,7 +315,7 @@ func (r *rpcxServer) SetArchiveConversations(ctx context.Context) SetArchiveConv
 						reply.Failed = make([]string, 0)
 					}
 					reply.Failed = append(reply.Failed, args.ConversationId[i])
-					r.logger.Error("SetArchiveConversations dbObj.ArchiveConversations Err:", fmt.Sprintf("record: %d,arg: %+v", i, args.ConversationId[i]), " err:", err.Error())
+					logger.Error("SetArchiveConversations dbObj.ArchiveConversations Err:", fmt.Sprintf("record: %d,arg: %+v", i, args.ConversationId[i]), " err:", err.Error())
 				}
 			})
 		} else {
@@ -317,7 +325,7 @@ func (r *rpcxServer) SetArchiveConversations(ctx context.Context) SetArchiveConv
 						reply.Failed = make([]string, 0)
 					}
 					reply.Failed = append(reply.Failed, args.ConversationId[i])
-					r.logger.Error("SetArchiveConversations dbObj.UnArchiveConversations Err:", fmt.Sprintf("record: %d,arg: %+v", i, args.ConversationId[i]), " err:", err.Error())
+					logger.Error("SetArchiveConversations dbObj.UnArchiveConversations Err:", fmt.Sprintf("record: %d,arg: %+v", i, args.ConversationId[i]), " err:", err.Error())
 				}
 			})
 		}
@@ -338,12 +346,13 @@ type UpdateConversationLastMsgReply struct {
 
 type UpdateConversationLastMsgFn func(ctx context.Context, args UpdateConversationLastMsgArgs, reply *UpdateConversationLastMsgReply) error
 
-func (r *rpcxServer) UpdateConversationLastMsg(ctx context.Context) UpdateConversationLastMsgFn {
+func (s *rpcxServer) UpdateConversationLastMsg(ctx context.Context) UpdateConversationLastMsgFn {
 	var ctxDb contant.PgCtxType
 	ctxDb = helper.GetCtxValue(ctx, contant.CTX_POSTGRES_KEY, ctxDb)
 	dbObj := db.New(ctxDb)
 	var cacheDb contant.CacheCtxType
 	cacheDb = helper.GetCtxValue(ctx, contant.CTX_CACHE_DB_KEY, cacheDb)
+	logger := s.GetLogger()
 	return func(ctx context.Context, args UpdateConversationLastMsgArgs, reply *UpdateConversationLastMsgReply) error {
 		err := dbObj.UpdateConversationLastMsg(ctx, db.UpdateConversationLastMsgParams{
 			LastSendTime:    args.LastTime,
@@ -352,7 +361,7 @@ func (r *rpcxServer) UpdateConversationLastMsg(ctx context.Context) UpdateConver
 			ConversationID:  args.ConversationId,
 		})
 		if err != nil {
-			r.logger.Error("UpdateConversationLastMsg dbObj.UpdateConversationLastMsg Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			logger.Error("UpdateConversationLastMsg dbObj.UpdateConversationLastMsg Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 		}
 		_ = cacheDb.SyncConversationLastMsgId(args.ConversationId, args.LastSendSession)
 		return err
@@ -369,22 +378,23 @@ type GetConversationSessionsReply struct {
 
 type GetConversationSessionsFn func(ctx context.Context, args GetConversationSessionsArgs, reply *GetConversationSessionsReply) error
 
-func (r *rpcxServer) GetConversationSessions(ctx context.Context) GetConversationSessionsFn {
+func (s *rpcxServer) GetConversationSessions(ctx context.Context) GetConversationSessionsFn {
 	var ctxDb contant.PgCtxType
 	ctxDb = helper.GetCtxValue(ctx, contant.CTX_POSTGRES_KEY, ctxDb)
 	dbObj := db.New(ctxDb)
 	var cacheDb contant.CacheCtxType
 	cacheDb = helper.GetCtxValue(ctx, contant.CTX_CACHE_DB_KEY, cacheDb)
+	logger := s.GetLogger()
 	return func(ctx context.Context, args GetConversationSessionsArgs, reply *GetConversationSessionsReply) error {
 		sessions, err := cacheDb.GetConversationSessions(args.ConversationId)
 		if len(sessions) == 0 {
 			if err != nil {
-				r.logger.Error("GetConversationSessions cacheDb.GetConversationSessions Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+				logger.Error("GetConversationSessions cacheDb.GetConversationSessions Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			}
 			// TODO: 这里有缓存穿透风险
 			ids, err := dbObj.GetConversationsAllUsers(ctx)
 			if err != nil {
-				r.logger.Error("GetConversationSessions dbObj.GetConversationsAllUsers Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+				logger.Error("GetConversationSessions dbObj.GetConversationsAllUsers Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 				return err
 			}
 			for _, v := range ids {
@@ -397,7 +407,7 @@ func (r *rpcxServer) GetConversationSessions(ctx context.Context) GetConversatio
 			return nil
 		}
 		if err := cacheDb.AddConversationSessions(args.ConversationId, reply.Sessions); err != nil {
-			r.logger.Error("GetConversationSessions cacheDb.AddConverstaionSessions Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			logger.Error("GetConversationSessions cacheDb.AddConverstaionSessions Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 		}
 		return nil
 	}
@@ -415,10 +425,11 @@ type UpdateSessionLastRecvMsgReply struct {
 
 type UpdateSessionLastRecvMsgFn func(context.Context, UpdateSessionLastRecvMsgArgs, *UpdateSessionLastRecvMsgReply) error
 
-func (r *rpcxServer) UpdateSessionLastRecvMsg(ctx context.Context) UpdateSessionLastRecvMsgFn {
+func (s *rpcxServer) UpdateSessionLastRecvMsg(ctx context.Context) UpdateSessionLastRecvMsgFn {
 	var ctxDb contant.PgCtxType
 	ctxDb = helper.GetCtxValue(ctx, contant.CTX_POSTGRES_KEY, ctxDb)
 	dbObj := db.New(ctxDb)
+	logger := s.GetLogger()
 	return func(ctx context.Context, args UpdateSessionLastRecvMsgArgs, reply *UpdateSessionLastRecvMsgReply) error {
 		if len(args.Sessions) == 0 || args.ConversationId == "" || args.LastRecvMsgId == "" {
 			return nil
@@ -429,7 +440,7 @@ func (r *rpcxServer) UpdateSessionLastRecvMsg(ctx context.Context) UpdateSession
 			ConversationID: args.ConversationId,
 			SessionID:      join_session,
 		}); err != nil {
-			r.logger.Error("UpdateSessionLastRecvMsg dbObj.UpdateSessionLastRecvMsg Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
+			logger.Error("UpdateSessionLastRecvMsg dbObj.UpdateSessionLastRecvMsg Err:", err.Error(), " arg:", fmt.Sprintf("%+v", args))
 			return err
 		}
 		return nil
@@ -447,20 +458,21 @@ type GetLastOneMsgIdFromDbReply struct {
 
 type getLastOneMsgIdFromDbFn func(context.Context, GetLastOneMsgIdFromDbArgs, *GetLastOneMsgIdFromDbReply) error
 
-func (r *rpcxServer) GetLastOneMsgIdFromDb(ctx context.Context) getLastOneMsgIdFromDbFn {
+func (s *rpcxServer) GetLastOneMsgIdFromDb(ctx context.Context) getLastOneMsgIdFromDbFn {
 	var ctxDb contant.PgCtxType
 	ctxDb = helper.GetCtxValue(ctx, contant.CTX_POSTGRES_KEY, ctxDb)
 	dbObj := db.New(ctxDb)
 	var cacheDb contant.CacheCtxType
 	cacheDb = helper.GetCtxValue(ctx, contant.CTX_CACHE_DB_KEY, cacheDb)
+	logger := s.GetLogger()
 	return func(ctx context.Context, args GetLastOneMsgIdFromDbArgs, reply *GetLastOneMsgIdFromDbReply) error {
 		mid, err := cacheDb.GetConversationLastMsgId(args.ConversationID)
 		reply.MsgId = mid
 		if err != nil {
-			r.logger.Error("GetLastOneMsgFromDb cacheDb.GetConversationLastMsgId Err: ", fmt.Sprintf("%v args: %s", err, args.ConversationID))
+			logger.Error("GetLastOneMsgFromDb cacheDb.GetConversationLastMsgId Err: ", fmt.Sprintf("%v args: %s", err, args.ConversationID))
 			mid, err := dbObj.GetLastOneMsgIdFromDb(ctx, args.ConversationID)
 			if err != nil {
-				r.logger.Error("GetLastOneMsgFromDb dbObj.GetLastOneMsgIdFromDb Err: ", fmt.Sprintf("%v args: %s", err, args.ConversationID))
+				logger.Error("GetLastOneMsgFromDb dbObj.GetLastOneMsgIdFromDb Err: ", fmt.Sprintf("%v args: %s", err, args.ConversationID))
 				return err
 			}
 			if mid != nil {
