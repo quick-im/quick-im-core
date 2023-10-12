@@ -14,6 +14,8 @@ import (
 	"github.com/quick-im/quick-im-core/services/persistence"
 )
 
+// TODO：用户发送消息的前提是用户在会话中
+
 type sendMsgFn func(context.Context, SendMsgArgs, *SendMsgReply) error
 
 func (r *rpcxServer) SendMsg(ctx context.Context) sendMsgFn {

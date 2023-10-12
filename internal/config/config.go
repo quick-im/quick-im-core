@@ -29,3 +29,70 @@ var (
 		all,
 	}
 )
+
+type Config struct {
+	Logger struct {
+		Level int8
+		Path  string
+	}
+	Jaeger struct {
+		Host string
+		Port uint16
+	}
+	PGDb struct {
+		Host     string
+		Port     uint16
+		Username string
+		Password string
+		DbName   string
+	}
+	RethinkDb struct {
+		Servers  []string
+		Db       string
+		Authkey  string
+		Username string
+		Password string
+	}
+	RedisDb struct {
+		Host     string
+		Port     uint16
+		Username string
+		Password string
+	}
+	Nats struct {
+		Servers []string
+	}
+	Service struct {
+		Conversation struct {
+			Ip                string
+			Port              uint16
+			OpenTracing       bool
+			UseConsulRegistry bool
+		}
+		Msgbroker struct {
+			Ip                string
+			Port              uint16
+			OpenTracing       bool
+			UseConsulRegistry bool
+		}
+		MsgId struct {
+			Ip                string
+			Port              uint16
+			OpenTracing       bool
+			UseConsulRegistry bool
+		}
+		Persistence struct {
+			Ip                string
+			Port              uint16
+			OpenTracing       bool
+			UseConsulRegistry bool
+		}
+	}
+	Application struct {
+		Ip                string
+		Port              uint16
+		OpenTracing       bool
+		UseConsulRegistry bool
+		IpWrite           []string
+	}
+}

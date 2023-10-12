@@ -12,6 +12,8 @@ import (
 	"gopkg.in/rethinkdb/rethinkdb-go.v6"
 )
 
+// TODO: 用户获取消息的前提是用户在会话中
+
 // 持久化消息
 type SaveMsgToDbArgs struct {
 	Msgs []model.Msg

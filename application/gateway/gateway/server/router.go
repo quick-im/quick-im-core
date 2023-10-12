@@ -67,12 +67,18 @@ func (a *apiServer) InitAndStartServer(ctx context.Context) {
 	router.HandlerFunc("POST", "/send_msg", middleware.JwtAuth(ctx, access.SendMsgHandler))
 	// conversation部分
 	router.HandlerFunc("POST", "/check_joined_conversation", middleware.JwtAuth(ctx, access.CheckJoinedConversation))
-	router.HandlerFunc("GET", "/get_joined_conversation", middleware.JwtAuth(ctx, access.GetJoinedConversation))
+	router.HandlerFunc("POST", "/get_joined_conversation", middleware.JwtAuth(ctx, access.GetJoinedConversation))
 	router.HandlerFunc("POST", "/get_conversation_detail", middleware.JwtAuth(ctx, access.GetConversationInfo))
 	router.HandlerFunc("POST", "/join_conversation", middleware.JwtAuth(ctx, access.JoinConversation))
 	router.HandlerFunc("POST", "/create_conversation", middleware.JwtAuth(ctx, access.CreateConversation))
 	router.HandlerFunc("POST", "/leave_conversation", middleware.JwtAuth(ctx, access.LeaveConversation))
 	router.HandlerFunc("POST", "/get_lastone_msgid", middleware.JwtAuth(ctx, access.GetConversationLastOneId))
+	// persistence部分
+	router.HandlerFunc("POST", "/get_conversation_msg_by_range", middleware.JwtAuth(ctx, access.GetMsgFromDbInRange))
+	router.HandlerFunc("POST", "/get_conversation_last_30_msg", middleware.JwtAuth(ctx, access.GetLast30MsgFromDb))
+	router.HandlerFunc("POST", "/get_conversation_lastone_msg", middleware.JwtAuth(ctx, access.GetLastOneMsgFromDb))
+	router.HandlerFunc("POST", "/get_conversation_30msg_after_the_id", middleware.JwtAuth(ctx, access.GetThe30MsgAfterTheId))
+	router.HandlerFunc("POST", "/get_conversation_30msg_before_the_id", middleware.JwtAuth(ctx, access.GetThe30MsgBeforeTheId))
 	// 受保护的接口
 	//conversation部分
 	router.HandlerFunc("POST", "/inner/get_token", middleware.ProtectApi(ctx, access.GetTokenBySessionInner))
