@@ -27,7 +27,7 @@ func (r *rpcxServer) listenMsg(ctx context.Context, nc *messaging.NatsWarp) {
 	var msgData model.Msg
 	sub, err := js.QueueSubscribe(config.MqMsgPersistenceGroup, "quickim-persistence", func(msg *nats.Msg) {
 		if err := c.Decode(msg.Data, &msgData); err != nil {
-			r.logger.Error("listenMsg SaveMsgToDb GobDecode Err", fmt.Sprintf("arg:%+v err:%v", msg.Data, err))
+			r.GetLogger().Error("listenMsg SaveMsgToDb GobDecode Err", fmt.Sprintf("arg:%+v err:%v", msg.Data, err))
 			_ = msg.Ack()
 			return
 		}
@@ -36,13 +36,13 @@ func (r *rpcxServer) listenMsg(ctx context.Context, nc *messaging.NatsWarp) {
 			RunWrite(rdb)
 		if err != nil {
 			_ = msg.Nak()
-			r.logger.Error("SaveMsgToDb rethinkdb.Insert Err", fmt.Sprintf("result:%+v arg:%+v err:%v", result, msgData, err))
+			r.GetLogger().Error("SaveMsgToDb rethinkdb.Insert Err", fmt.Sprintf("result:%+v arg:%+v err:%v", result, msgData, err))
 			return
 		}
 		_ = msg.Ack()
 	}, nats.AckExplicit(), nats.AckWait(30*time.Second), nats.MaxDeliver(3))
 	if err != nil {
-		r.logger.Warn("ListenMsg Err", err.Error())
+		r.GetLogger().Warn("ListenMsg Err", err.Error())
 	}
 	defer sub.Unsubscribe()
 	select {}

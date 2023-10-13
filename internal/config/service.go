@@ -16,7 +16,7 @@ type ServiceConfig interface {
 	GetUseConsulRegistry() bool
 	GetConsulServers() []string
 	GetNatsServers() []string
-	GetNatsDisableJetstream() bool
+	GetNatsEnableJetstream() bool
 	GetLogger() logger.Logger
 }
 
@@ -170,7 +170,7 @@ func (s *serviceConfigImpl) GetNatsServers() []string {
 	return s.natsServers
 }
 
-func (s *serviceConfigImpl) GetNatsDisableJetstream() bool {
+func (s *serviceConfigImpl) GetNatsEnableJetstream() bool {
 	return s.natsEnableJetstream
 }
 

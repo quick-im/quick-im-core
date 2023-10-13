@@ -27,7 +27,7 @@ func (r *rpcxServer) BroadcastRecv(ctx context.Context) broadcastRecvFn {
 		getSessionsReply := conversation.GetConversationSessionsReply{}
 		err := conversationService.Call(ctx, conversation.SERVICE_GET_CONVERSATION_SSESSIONS, getSessionsArgs, &getSessionsReply)
 		if err != nil {
-			r.logger.Error("BroadcastRecv Call Service: conversationService Method: SERVICE_GET_CONVERSATION_SSESSIONS failed,", fmt.Sprintf("args: %#v,err: %v", args, err))
+			r.GetLogger().Error("BroadcastRecv Call Service: conversationService Method: SERVICE_GET_CONVERSATION_SSESSIONS failed,", fmt.Sprintf("args: %#v,err: %v", args, err))
 			return err
 		}
 		getSessionLastIdArgs := conversation.GetLastOneMsgIdFromDbArgs{
@@ -41,7 +41,7 @@ func (r *rpcxServer) BroadcastRecv(ctx context.Context) broadcastRecvFn {
 		// 	if c, exist := r.connList.connMap[getSessionsReply.Sessions[i]]; exist {
 		// 		for platform := range c.PlatformConn {
 		// 			if _, err := c.PlatformConn[platform].Write(data); err != nil {
-		// 				r.logger.Error("BroadcastRecv Send Msg To Session Err:", fmt.Sprintf("session: %s, platform: %d, err: %v", getSessionsReply.Sessions[i], platform, err))
+		// 				r.GetLogger().Error("BroadcastRecv Send Msg To Session Err:", fmt.Sprintf("session: %s, platform: %d, err: %v", getSessionsReply.Sessions[i], platform, err))
 		// 			}
 		// 		}
 		// 	}
@@ -70,7 +70,7 @@ func (r *rpcxServer) BroadcastRecv(ctx context.Context) broadcastRecvFn {
 					})
 					// _ = platform
 					// if err := r.rpcxSer.SendMessage(r.clientList.client[gatewayUuid].conn, SERVER_NAME, SERVICE_BROADCAST_RECV, nil, data); err != nil {
-					// 	r.logger.Error("BroadcastRecv Send Msg To Session Err:", fmt.Sprintf("session: %s, err: %v", getSessionsReply.Sessions[i], err))
+					// 	r.GetLogger().Error("BroadcastRecv Send Msg To Session Err:", fmt.Sprintf("session: %s, err: %v", getSessionsReply.Sessions[i], err))
 					// 	return err
 					// }
 				}
@@ -81,11 +81,11 @@ func (r *rpcxServer) BroadcastRecv(ctx context.Context) broadcastRecvFn {
 			recvSessions.ToSessions = sendMaps[gatewayUuid]
 			data, err := c.Encode(recvSessions)
 			if err != nil {
-				r.logger.Error("BroadcastRecv Encode failed,", fmt.Sprintf("args: %#v, err: %v", recvSessions, err))
+				r.GetLogger().Error("BroadcastRecv Encode failed,", fmt.Sprintf("args: %#v, err: %v", recvSessions, err))
 				return err
 			}
 			if err := r.rpcxSer.SendMessage(r.clientList.client[gatewayUuid].conn, SERVER_NAME, SERVICE_BROADCAST_RECV, nil, data); err != nil {
-				r.logger.Error("Msgbroker Send Msg To Session Err:", fmt.Sprintf("gatewayUuid: %s, gatewayAddr: %s, err: %v", gatewayUuid, r.clientList.client[gatewayUuid].conn.RemoteAddr().String(), err))
+				r.GetLogger().Error("Msgbroker Send Msg To Session Err:", fmt.Sprintf("gatewayUuid: %s, gatewayAddr: %s, err: %v", gatewayUuid, r.clientList.client[gatewayUuid].conn.RemoteAddr().String(), err))
 				return err
 			}
 		}
@@ -231,7 +231,7 @@ func (r *rpcxServer) KickoutDuplicate(ctx context.Context) kickoutDuplicateFn {
 					}
 					data, err := c.Encode(msg)
 					if err != nil {
-						r.logger.Error("KickoutDuplicate Encode Data failed: ", fmt.Sprintf("Args: %#v, err: %v", msg, err))
+						r.GetLogger().Error("KickoutDuplicate Encode Data failed: ", fmt.Sprintf("Args: %#v, err: %v", msg, err))
 					}
 					_ = r.rpcxSer.SendMessage(r.clientList.client[gatewayUuid].conn, SERVER_NAME, SERVICE_KICKOUT_DUPLICATE, nil, data)
 					// 直接跳出处理，因为不该有第二个同用户的同平台在节点中，这是个bug

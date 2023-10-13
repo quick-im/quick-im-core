@@ -31,14 +31,14 @@ func (r *rpcxServer) listenMsg(ctx context.Context, nc *messaging.NatsWarp) {
 	sub, err := js.Subscribe(config.MqMsgBrokerSubject, func(msg *nats.Msg) {
 		// 广播
 		if err := c.Decode(msg.Data, &msgData); err != nil {
-			r.logger.Error("MsgBroker listenMsg Decode failed,", fmt.Sprintf(" args: %#v, err: %v", msg.Data, err))
+			r.GetLogger().Error("MsgBroker listenMsg Decode failed,", fmt.Sprintf(" args: %#v, err: %v", msg.Data, err))
 			_ = msg.Ack()
 			return
 		}
 		getSessionsArgs.ConversationId = msgData.ConversationID
 		err := conversationService.Call(ctx, conversation.SERVICE_GET_CONVERSATION_SSESSIONS, getSessionsArgs, &getSessionsReply)
 		if err != nil {
-			r.logger.Error("MsgBroker Call Service: conversationService Method: SERVICE_GET_CONVERSATION_SSESSIONS failed,", fmt.Sprintf("args: %#v,err: %v", msgData, err))
+			r.GetLogger().Error("MsgBroker Call Service: conversationService Method: SERVICE_GET_CONVERSATION_SSESSIONS failed,", fmt.Sprintf("args: %#v,err: %v", msgData, err))
 			return
 		}
 		// r.connList.lock.RLock()
@@ -83,18 +83,18 @@ func (r *rpcxServer) listenMsg(ctx context.Context, nc *messaging.NatsWarp) {
 			recvSessions.ToSessions = sendMaps[gatewayUuid]
 			data, err := c2.Encode(recvSessions)
 			if err != nil {
-				r.logger.Error("MsgBroker listenMsg Encode failed,", fmt.Sprintf("args: %#v, err: %v", recvSessions, err))
+				r.GetLogger().Error("MsgBroker listenMsg Encode failed,", fmt.Sprintf("args: %#v, err: %v", recvSessions, err))
 				return
 			}
 			if err := r.rpcxSer.SendMessage(r.clientList.client[gatewayUuid].conn, SERVER_NAME, SERVICE_BROADCAST_RECV, nil, data); err != nil {
-				r.logger.Error("Msgbroker Send Msg To Session Err:", fmt.Sprintf("gatewayUuid: %s, gatewayAddr: %s, err: %v", gatewayUuid, r.clientList.client[gatewayUuid].conn.RemoteAddr().String(), err))
+				r.GetLogger().Error("Msgbroker Send Msg To Session Err:", fmt.Sprintf("gatewayUuid: %s, gatewayAddr: %s, err: %v", gatewayUuid, r.clientList.client[gatewayUuid].conn.RemoteAddr().String(), err))
 			}
 		}
 		//
 		_ = msg.Ack()
 	}, nats.DeliverNew())
 	if err != nil {
-		r.logger.Warn("ListenMsg Err", err.Error())
+		r.GetLogger().Warn("ListenMsg Err", err.Error())
 	}
 	defer sub.Unsubscribe()
 	select {}

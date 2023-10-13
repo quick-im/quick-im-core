@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 
+	"github.com/quick-im/quick-im-core/internal/config"
 	"github.com/quick-im/quick-im-core/internal/contant"
 	"github.com/quick-im/quick-im-core/internal/helper"
 	"github.com/quick-im/quick-im-core/internal/msgdb"
@@ -25,14 +26,13 @@ func main() {
 		helper.CtxOptWarp[contant.RethinkDbCtxType](contant.CTX_RETHINK_DB_KEY, rethinkDbOpt.GetRethinkDb()),
 	)
 	if err := persistence.NewServer(
-		persistence.WithIp("0.0.0.0"),
-		persistence.WithPort(8015),
-		persistence.WithOpenTracing(true),
-		persistence.WithJeagerServiceName(persistence.SERVER_NAME),
-		persistence.WithJeagerAgentHostPort("127.0.0.1:6831"),
-		persistence.WithNatsServers("nats://127.0.0.1:4222"),
-		persistence.WithUseConsulRegistry(true),
-		persistence.WithConsulServers("127.0.0.1:8500"),
+		config.WithIp("0.0.0.0"),
+		config.WithPort(8015),
+		config.WithOpenTracing(true),
+		config.WithJeagerAgentHostPort("127.0.0.1:6831"),
+		config.WithNatsServers("nats://127.0.0.1:4222"),
+		config.WithUseConsulRegistry(true),
+		config.WithConsulServers("127.0.0.1:8500"),
 	).Start(ctx); err != nil {
 		panic(err)
 	}

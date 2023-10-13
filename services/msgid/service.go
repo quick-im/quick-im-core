@@ -7,67 +7,39 @@ import (
 	"time"
 
 	"github.com/quick-im/quick-im-core/internal/config"
-	"github.com/quick-im/quick-im-core/internal/logger"
-	"github.com/quick-im/quick-im-core/internal/logger/innerzap"
 	"github.com/quick-im/quick-im-core/internal/tracing/plugin"
 	cserver "github.com/rpcxio/rpcx-consul/serverplugin"
 	"github.com/smallnest/rpcx/server"
-	"go.uber.org/zap/zapcore"
 )
 
 type rpcxServer struct {
-	ip                  string
-	port                uint16
-	openTracing         bool
-	serviceName         string
-	trackAgentHostPort  string
-	useConsulRegistry   bool
-	consulServers       []string
-	natsServers         []string
-	natsEnableJetstream bool
-	logger              logger.Logger
+	config.ServiceConfig
 }
 
-func NewServer(opts ...Option) *rpcxServer {
-	ser := &rpcxServer{
-		consulServers:       make([]string, 0),
-		natsServers:         make([]string, 0),
-		natsEnableJetstream: true,
-		serviceName:         SERVER_NAME,
+func NewServer(opts ...config.Option) *rpcxServer {
+	return &rpcxServer{
+		config.NewServer(SERVER_NAME, opts...),
 	}
-	for i := range opts {
-		opts[i](ser)
-	}
-	if ser.logger == nil {
-		ser.logger = innerzap.NewZapLoggerAdapter(
-			innerzap.NewLoggerWithOpt(
-				innerzap.WithLogLevel(zapcore.DebugLevel),
-				innerzap.WithServiceName(SERVER_NAME),
-				innerzap.WithLogPath("logs"),
-			).NewLogger(),
-		)
-	}
-	return ser
 }
 
 func (s *rpcxServer) Start(ctx context.Context) error {
 	ser := server.NewServer()
-	if s.openTracing {
-		tracer, ctx := plugin.AddServerTrace(ser, s.serviceName, s.trackAgentHostPort)
+	if s.GetOpenTracing() {
+		tracer, ctx := plugin.AddServerTrace(ser, SERVER_NAME, s.GetJeagerAgentHostPort())
 		defer tracer.Shutdown(ctx)
 	}
 	s.addRegistryPlugin(ser)
 	_ = ser.RegisterFunctionName(SERVER_NAME, SERVICE_GENERATE_MESSAGE_ID, s.GenerateMessageID(ctx), "")
-	return ser.Serve("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
+	return ser.Serve("tcp", fmt.Sprintf("%s:%d", s.GetIp(), s.GetPort()))
 }
 
 func (s *rpcxServer) addRegistryPlugin(ser *server.Server) {
-	if !s.useConsulRegistry {
+	if !s.GetUseConsulRegistry() {
 		return
 	}
 	r := &cserver.ConsulRegisterPlugin{
-		ServiceAddress: "tcp@" + fmt.Sprintf("%s:%d", s.ip, s.port),
-		ConsulServers:  s.consulServers,
+		ServiceAddress: "tcp@" + fmt.Sprintf("%s:%d", s.GetIp(), s.GetPort()),
+		ConsulServers:  s.GetConsulServers(),
 		BasePath:       config.ServerPrefix,
 		UpdateInterval: time.Minute,
 	}
