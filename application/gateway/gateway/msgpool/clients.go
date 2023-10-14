@@ -34,6 +34,7 @@ type chWarp struct {
 	sid      string
 	platform uint8
 	ch       chan model.Msg
+	queue    *ConcurrentQueue[model.Msg]
 }
 
 var subs = make(map[string]map[uint8]chWarp)
@@ -68,6 +69,7 @@ func RegisterTerm(ctx context.Context, c client.XClient, ch chan *protocol.Messa
 			sid:      sid,
 			platform: platform,
 			ch:       make(chan model.Msg),
+			queue:    NewConcurrentQueue[model.Msg](),
 		}
 	}
 	lock.Unlock()
@@ -131,6 +133,7 @@ func run(ctx context.Context) {
 	}
 }
 
+// 考虑为每个client分配一个queue
 func (cn *clientAndCh) ListenMsg(ctx context.Context) {
 	defer cn.c.Close()
 	msgData := msgbroker.BroadcastMsgWarp{}
