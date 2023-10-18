@@ -18,7 +18,8 @@ import (
 func main() {
 	flags := []cli.Flag{
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name: "version",
+			Name:  "version",
+			Value: "1",
 		}),
 		&cli.StringFlag{
 			Name:    "config",
@@ -27,7 +28,12 @@ func main() {
 			Usage:   "配置文件路径",
 		},
 	}
-	flags = append(flags, config.BaseFlags...)
+	flags = append(flags, config.JaegerFlags...)
+	flags = append(flags, config.PgFlags...)
+	flags = append(flags, config.ConsulFlags...)
+	flags = append(flags, config.RedisFlags...)
+	flags = append(flags, config.NatsFlags...)
+	flags = append(flags, config.LogFlags...)
 	app := &cli.App{
 		Name:   "conversation",
 		Usage:  "QuickIM会话管理模块",

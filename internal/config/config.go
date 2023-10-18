@@ -34,7 +34,7 @@ var (
 	}
 )
 
-var BaseFlags = []cli.Flag{
+var JaegerFlags = []cli.Flag{
 	&cli.BoolFlag{
 		Name:    "jaeger.enable",
 		Value:   false,
@@ -53,6 +53,9 @@ var BaseFlags = []cli.Flag{
 		Usage:   "jaeger port",
 		EnvVars: []string{"JAEGER_PORT"},
 	},
+}
+
+var PgFlags = []cli.Flag{
 	&cli.StringFlag{
 		Name:    "pg.host",
 		Value:   "127.0.0.1",
@@ -83,6 +86,9 @@ var BaseFlags = []cli.Flag{
 		Usage:   "postgres dbname",
 		EnvVars: []string{"PG_DBNAME"},
 	},
+}
+
+var RedisFlags = []cli.Flag{
 	&cli.StringFlag{
 		Name:    "redis.host",
 		Value:   "127.0.0.1",
@@ -107,6 +113,9 @@ var BaseFlags = []cli.Flag{
 		Usage:   "redis password",
 		EnvVars: []string{"REDIS_PASSWORD"},
 	},
+}
+
+var RethinkDbFlags = []cli.Flag{
 	&cli.StringSliceFlag{
 		Name: "rethinkdb.servers",
 		Value: cli.NewStringSlice(
@@ -118,7 +127,7 @@ var BaseFlags = []cli.Flag{
 	&cli.StringFlag{
 		Name:    "rethinkdb.db",
 		Value:   "quickim",
-		Usage:   "rethinkdb db",
+		Usage:   "rethinkdb db name",
 		EnvVars: []string{"RETHINKDB_DB"},
 	},
 	&cli.StringFlag{
@@ -139,12 +148,27 @@ var BaseFlags = []cli.Flag{
 		Usage:   "rethinkdb password",
 		EnvVars: []string{"RETHINKDB_PASSWORD"},
 	},
+}
+
+var NatsFlags = []cli.Flag{
 	&cli.StringSliceFlag{
 		Name:    "nats.servers",
 		Value:   cli.NewStringSlice("127.0.0.1:4222"),
 		Usage:   "nats servers",
 		EnvVars: []string{"NATS_SERVERS"},
 	},
+}
+
+var ConsulFlags = []cli.Flag{
+	&cli.StringSliceFlag{
+		Name:    "consul.servers",
+		Value:   cli.NewStringSlice("127.0.0.1:8500"),
+		Usage:   "consul servers",
+		EnvVars: []string{"CONSUL_SERVERS"},
+	},
+}
+
+var LogFlags = []cli.Flag{
 	&cli.StringFlag{
 		Name:    "log.path",
 		Value:   "./logs/",
@@ -198,6 +222,9 @@ type Config struct {
 		Password string
 	}
 	Nats struct {
+		Servers []string
+	}
+	Consul struct {
 		Servers []string
 	}
 	Service struct {
