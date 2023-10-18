@@ -2,6 +2,8 @@ package config
 
 import (
 	"net"
+
+	"github.com/urfave/cli/v2"
 )
 
 const (
@@ -32,14 +34,148 @@ var (
 	}
 )
 
+var BaseFlags = []cli.Flag{
+	&cli.BoolFlag{
+		Name:    "jaeger.enable",
+		Value:   false,
+		Usage:   "jaeger enable",
+		EnvVars: []string{"JAEGER_ENABLE"},
+	},
+	&cli.StringFlag{
+		Name:    "jaeger.host",
+		Value:   "127.0.0.1",
+		Usage:   "jaeger host",
+		EnvVars: []string{"JAEGER_HOST"},
+	},
+	&cli.UintFlag{
+		Name:    "jaeger.port",
+		Value:   6832,
+		Usage:   "jaeger port",
+		EnvVars: []string{"JAEGER_PORT"},
+	},
+	&cli.StringFlag{
+		Name:    "pg.host",
+		Value:   "127.0.0.1",
+		Usage:   "postgres host",
+		EnvVars: []string{"PG_HOST"},
+	},
+	&cli.UintFlag{
+		Name:    "pg.port",
+		Value:   5432,
+		Usage:   "postgres port",
+		EnvVars: []string{"PG_PORT"},
+	},
+	&cli.StringFlag{
+		Name:    "pg.username",
+		Value:   "postgres",
+		Usage:   "postgres username",
+		EnvVars: []string{"PG_USERNAME"},
+	},
+	&cli.StringFlag{
+		Name:    "pg.password",
+		Value:   "postgres",
+		Usage:   "postgres password",
+		EnvVars: []string{"PG_PASSWORD"},
+	},
+	&cli.StringFlag{
+		Name:    "pg.dbname",
+		Value:   "postgres",
+		Usage:   "postgres dbname",
+		EnvVars: []string{"PG_DBNAME"},
+	},
+	&cli.StringFlag{
+		Name:    "redis.host",
+		Value:   "127.0.0.1",
+		Usage:   "redis host",
+		EnvVars: []string{"REDIS_HOST"},
+	},
+	&cli.UintFlag{
+		Name:    "redis.port",
+		Value:   6379,
+		Usage:   "redis port",
+		EnvVars: []string{"REDIS_PORT"},
+	},
+	&cli.StringFlag{
+		Name:    "redis.username",
+		Value:   "",
+		Usage:   "redis username",
+		EnvVars: []string{"REDIS_USERNAME"},
+	},
+	&cli.StringFlag{
+		Name:    "redis.password",
+		Value:   "",
+		Usage:   "redis password",
+		EnvVars: []string{"REDIS_PASSWORD"},
+	},
+	&cli.StringSliceFlag{
+		Name: "rethinkdb.servers",
+		Value: cli.NewStringSlice(
+			"127.0.0.1:28015",
+		),
+		Usage:   "rethinkdb servers",
+		EnvVars: []string{"RETHINKDB_SERVERS"},
+	},
+	&cli.StringFlag{
+		Name:    "rethinkdb.db",
+		Value:   "quickim",
+		Usage:   "rethinkdb db",
+		EnvVars: []string{"RETHINKDB_DB"},
+	},
+	&cli.StringFlag{
+		Name:    "rethinkdb.authkey",
+		Value:   "",
+		Usage:   "rethinkdb authkey",
+		EnvVars: []string{"RETHINKDB_AUTHKEY"},
+	},
+	&cli.StringFlag{
+		Name:    "rethinkdb.username",
+		Value:   "",
+		Usage:   "rethinkdb username",
+		EnvVars: []string{"RETHINKDB_USERNAME"},
+	},
+	&cli.StringFlag{
+		Name:    "rethinkdb.password",
+		Value:   "",
+		Usage:   "rethinkdb password",
+		EnvVars: []string{"RETHINKDB_PASSWORD"},
+	},
+	&cli.StringSliceFlag{
+		Name:    "nats.servers",
+		Value:   cli.NewStringSlice("127.0.0.1:4222"),
+		Usage:   "nats servers",
+		EnvVars: []string{"NATS_SERVERS"},
+	},
+	&cli.StringFlag{
+		Name:    "log.path",
+		Value:   "./logs/",
+		Usage:   "日志文件路径",
+		EnvVars: []string{"LOG_PATH"},
+	},
+	&cli.IntFlag{
+		Name:  "log.level",
+		Value: -1,
+		Usage: `日志记录等级：
+			-1：DebugLevel
+			 1：InfoLevel
+			 2：WarnLevel
+			 3：ErrorLevel
+			 4：DPanicLevel
+			 5：PanicLevel
+			 6：FatalLevel
+			`,
+		EnvVars: []string{"LOG_LEVEL"},
+	},
+}
+
 type Config struct {
 	Logger struct {
 		Level int8
 		Path  string
 	}
 	Jaeger struct {
-		Host string
-		Port uint16
+		Enable bool
+		Host   string
+		Port   uint16
 	}
 	PGDb struct {
 		Host     string

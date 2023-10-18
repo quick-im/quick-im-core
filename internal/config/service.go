@@ -41,6 +41,7 @@ func NewServer(SERVER_NAME string, opts ...Option) ServiceConfig {
 		natsEnableJetstream: true,
 		loggerLevel:         int8(zapcore.DebugLevel),
 		logPath:             "logs",
+		useConsulRegistry:   true,
 	}
 	for i := range opts {
 		opts[i](ser)
