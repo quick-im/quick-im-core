@@ -19,7 +19,6 @@ import (
 )
 
 func main() {
-	log.SetFlags(log.Llongfile)
 	flags := []cli.Flag{
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:  "version",

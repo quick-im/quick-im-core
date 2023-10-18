@@ -197,7 +197,7 @@ type Config struct {
 		Path  string
 	}
 	Jaeger struct {
-		Enable bool
+		Enable bool // 打开这个则所有服务开启OpenTracing
 		Host   string
 		Port   uint16
 	}
@@ -231,32 +231,27 @@ type Config struct {
 		Conversation struct {
 			Ip                string
 			Port              uint16
-			OpenTracing       bool
 			UseConsulRegistry bool
 		}
 		Msgbroker struct {
 			Ip                string
 			Port              uint16
-			OpenTracing       bool
 			UseConsulRegistry bool
 		}
 		MsgId struct {
 			Ip                string
 			Port              uint16
-			OpenTracing       bool
 			UseConsulRegistry bool
 		}
 		Persistence struct {
 			Ip                string
 			Port              uint16
-			OpenTracing       bool
 			UseConsulRegistry bool
 		}
 	}
 	Application struct {
 		Ip                string
 		Port              uint16
-		OpenTracing       bool
 		UseConsulRegistry bool
 		IpWrite           []string
 	}
