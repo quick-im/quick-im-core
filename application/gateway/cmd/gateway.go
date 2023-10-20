@@ -15,31 +15,26 @@ import (
 	"github.com/quick-im/quick-im-core/services/msgid"
 	"github.com/quick-im/quick-im-core/services/persistence"
 	"github.com/urfave/cli/v2"
-	"github.com/urfave/cli/v2/altsrc"
 )
 
 func main() {
 	flags := []cli.Flag{
-		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:  "version",
-			Value: "1",
-		}),
 		&cli.StringFlag{
 			Name:    "config",
 			Aliases: []string{"c"},
-			Value:   "config.yaml",
+			Value:   "config.toml",
 			Usage:   "配置文件路径",
 		},
 	}
+	flags = append(flags, config.GetServiceFlags(config.GatewayName, 8088)...)
 	flags = append(flags, config.JaegerFlags...)
 	flags = append(flags, config.ConsulFlags...)
 	flags = append(flags, config.NatsFlags...)
 	flags = append(flags, config.LogFlags...)
 	app := &cli.App{
-		Name:   "Gateway",
-		Usage:  "QuickIM网关服务",
-		Flags:  flags,
-		Before: altsrc.InitInputSourceWithContext(flags, altsrc.NewYamlSourceFromFlagFunc("config")),
+		Name:  "Gateway",
+		Usage: "QuickIM网关服务",
+		Flags: flags,
 		Action: func(ctx *cli.Context) error {
 			err := run(ctx)
 			return err
@@ -51,15 +46,16 @@ func main() {
 }
 
 func run(args *cli.Context) error {
+	conf := config.MergeConf(args)
 	ctx := context.Background()
 	ser := server.NewApiServer(
-		server.WithIp("0.0.0.0"),
-		server.WithPort(8088),
-		server.WithOpenTracing(true),
+		server.WithIp(conf.Gateway.IP),
+		server.WithPort(uint16(conf.Gateway.Port)),
+		server.WithOpenTracing(conf.OpenTracing),
 		server.WithJeagerServiceName("Gateway"),
-		server.WithJeagerAgentHostPort("127.0.0.1:6831"),
+		server.WithJeagerAgentHostPort(conf.Jaeger.Host),
 		server.WithUseConsulRegistry(true),
-		server.WithConsulServers("127.0.0.1:8500"),
+		server.WithConsulServers(conf.Consul.Servers...),
 	)
 	persistence := ser.InitDepServices(persistence.SERVER_NAME)
 	msgbroker := ser.InitDepServices(msgbroker.SERVER_NAME)

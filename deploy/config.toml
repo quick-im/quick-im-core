@@ -1,0 +1,61 @@
+openTracing = false
+
+[logger]
+path = "./logs/"
+level = -1
+
+[jaeger]
+host = "127.0.0.1"
+port = 6832
+
+[postgres]
+host = "127.0.0.1"
+port = 5432
+username = "postgres"
+password = "123456"
+db = "quick-im"
+
+[redis]
+host = "127.0.0.1"
+port = 6379
+username = ""
+password = ""
+
+[nats]
+servers = [ "127.0.0.1:28015" ]
+
+[rethinkdb]
+servers = [ "127.0.0.1:28015" ]
+db = "quick-im"
+authkey = ""
+username = ""
+password = ""
+
+[consul]
+servers = [ "127.0.0.1:8500" ]
+
+[gateway]
+ip = "0.0.0.0"
+port = 8088
+ipWrite = [ "0.0.0.0/0" ]
+jwtKey = "quick-im"
+
+[services.conversation]
+ip = "0.0.0.0"
+port = 8016
+
+[services.msgbroker]
+ip = "0.0.0.0"
+port = 8017
+
+[services.msghub]
+ip = "0.0.0.0"
+port = 8019
+
+[services.msgid]
+ip = "0.0.0.0"
+port = 8018
+
+[services.persistence]
+ip = "0.0.0.0"
+port = 8015
