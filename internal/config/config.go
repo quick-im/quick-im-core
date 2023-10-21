@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"net"
 
 	"github.com/BurntSushi/toml"
 	"github.com/urfave/cli/v2"
@@ -36,11 +35,12 @@ const (
 )
 
 var (
-	// 调试使用，生产环境不建议
-	_, all, _ = net.ParseCIDR("0.0.0.0/0")
-	IPWhite   = []*net.IPNet{
-		all,
-	}
+// 调试使用，生产环境不建议
+// _, all, _ = net.ParseCIDR("0.0.0.0/0")
+//
+//	IPWhite   = []*net.IPNet{
+//		all,
+//	}
 )
 
 var JaegerFlags = []cli.Flag{

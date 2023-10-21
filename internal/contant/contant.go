@@ -19,6 +19,7 @@ type LoggerCtxType = logger.Logger
 type NatsCtxType = *messaging.NatsWarp
 type RpcxClientCtxType = *rpcx.RpcxClientWithOpt
 type RethinkDbCtxType = *r.Session
+type IPWhiteListCtxType = []string
 
 var JWTClaimsCtxType = &jwt.MyCustomClaims{}
 

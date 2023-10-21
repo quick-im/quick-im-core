@@ -74,6 +74,7 @@ func run(args *cli.Context) error {
 	ctx = context.WithValue(ctx, contant.CTX_SERVICE_MSGHUB, msghub)
 	ctx = context.WithValue(ctx, contant.CTX_SERVICE_MSGID, msgid)
 	ctx = context.WithValue(ctx, contant.CTX_SERVICE_CONVERSATION, conversation)
+	ctx = context.WithValue(ctx, contant.CTX_IP_WHITELIST_KEY, conf.Gateway.IPWrite)
 	go msgpool.RunMsgPollServer(ctx)
 	ser.InitAndStartServer(ctx)
 	return nil

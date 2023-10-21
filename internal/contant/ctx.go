@@ -12,6 +12,7 @@ const (
 	CTX_SERVICE_MSGHUB       ContentKey = "__ctx.service.msghub.key__"
 	CTX_SERVICE_MSGID        ContentKey = "__ctx.service.msgid.key__"
 	CTX_LOGGER_KEY           ContentKey = "__ctx.logger.key__"
+	CTX_IP_WHITELIST_KEY     ContentKey = "__ctx.ip.whitelist.key__"
 )
 
 const (

@@ -37,7 +37,9 @@ servers = [ "127.0.0.1:8500" ]
 [gateway]
 ip = "0.0.0.0"
 port = 8088
-ipWrite = [ "0.0.0.0/0" ]
+ipWrite = [ 
+    "0.0.0.0/0", # 开发测试环境使用
+]
 jwtKey = "quick-im"
 
 [services.conversation]
