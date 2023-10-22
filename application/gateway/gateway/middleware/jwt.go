@@ -15,6 +15,7 @@ type AuthHandlerFunc func(ctx context.Context) http.HandlerFunc
 
 func JwtAuth(ctx context.Context, h AuthHandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		authorization := r.Header.Get("Authorization")
 		urlToken := r.URL.Query().Get("token")
 		if authorization == "" {

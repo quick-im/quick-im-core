@@ -27,6 +27,7 @@ func main() {
 		},
 	}
 	flags = append(flags, config.GetServiceFlags(config.GatewayName, 8088)...)
+	flags = append(flags, config.GatewayIpwriteFlags...)
 	flags = append(flags, config.JaegerFlags...)
 	flags = append(flags, config.ConsulFlags...)
 	flags = append(flags, config.NatsFlags...)

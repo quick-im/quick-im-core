@@ -1,0 +1,31 @@
+@hostname = 127.0.0.1
+@port = 8088
+@host = {{hostname}}:{{port}}
+@contentType = application/json
+
+@testUserSessionId = "test-client-session-id"
+
+# @name getToken
+POST http://{{host}}/inner/get_token HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+    "session": {{testUserSessionId}},
+    "platform": 1
+}
+
+###
+
+@authToken = {{getToken.response.body.$.data}}
+
+# @name sendMsg
+POST http://{{host}}/send_msg HTTP/1.1
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+    "conversation_id": "87ba7679-b682-47e7-8499-0385dda22b66",
+	"status": 0,
+	"type": 1,
+	"content": "消息内容"
+}

@@ -47,7 +47,7 @@ func main() {
 
 func run(args *cli.Context) error {
 	conf := config.MergeConf(args)
-	fmt.Printf("%#v\n", conf)
+	// fmt.Printf("%#v\n", conf)
 	dbOpt := db.NewPostgresWithOpt(
 		db.WithHost(conf.Postgres.Host),
 		db.WithPort(uint16(conf.Postgres.Port)),

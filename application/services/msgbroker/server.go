@@ -44,7 +44,7 @@ func run(args *cli.Context) error {
 	ctx := context.Background()
 	if err := msgbroker.NewServer(
 		config.WithIp(conf.Services.Msgbroker.IP),
-		config.WithPort(uint16(conf.Services.Msghub.Port)),
+		config.WithPort(uint16(conf.Services.Msgbroker.Port)),
 		config.WithOpenTracing(conf.OpenTracing),
 		config.WithJeagerAgentHostPort(fmt.Sprintf("%s:%d", conf.Jaeger.Host, conf.Jaeger.Port)),
 		config.WithNatsServers(conf.Nats.Servers...),

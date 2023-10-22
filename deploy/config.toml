@@ -13,7 +13,7 @@ host = "127.0.0.1"
 port = 5432
 username = "postgres"
 password = "123456"
-db = "quick-im"
+db = "quickim"
 
 [redis]
 host = "127.0.0.1"

@@ -20,7 +20,7 @@ type sendMsgArgs struct {
 	ConversationID string `json:"conversation_id"`
 	Status         int32  `json:"status"`
 	Type           int32  `json:"type"`
-	Content        []byte `json:"content"`
+	Content        string `json:"content"`
 }
 
 func SendMsgHandler(ctx context.Context) http.HandlerFunc {
@@ -64,7 +64,7 @@ func SendMsgHandler(ctx context.Context) http.HandlerFunc {
 			FromSession:    claims.Sid,
 			ConversationID: clientArgs.ConversationID,
 			MsgType:        clientArgs.Type,
-			Content:        clientArgs.Content,
+			Content:        []byte(clientArgs.Content),
 			SendTime:       time.Now(),
 		}
 		sendMsgReply := msghub.SendMsgReply{}

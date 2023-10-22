@@ -29,30 +29,34 @@ func ProtectApi(ctx context.Context, h ProtectHandlerFunc) http.HandlerFunc {
 			} else {
 				cidr = fmt.Sprintf("%s/128", cidr)
 			}
-			_, c, err := net.ParseCIDR(cidr)
-			if err != nil {
-				continue
-			}
-			CIDRList[i] = c
 		}
+		_, c, err := net.ParseCIDR(cidr)
+		if err != nil {
+			continue
+		}
+		CIDRList = append(CIDRList, c)
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		coder := json.NewEncoder(w)
 		host, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
+		remoteIp := net.ParseIP(host)
 		var pass bool
-		for i := range ipwhite {
+		for i := range CIDRList {
 			if CIDRList[i] != nil {
-				CIDRList[i].Contains(net.IP(host))
+				if CIDRList[i].Contains(remoteIp) {
+					pass = true
+					break
+				}
 			}
-			pass = true
-			break
 		}
 		if !pass {
 			coder.Encode(quickerr.ErrNotAllowedRequest)
+			return
 		}
 		h(ctx)(w, r)
 	}

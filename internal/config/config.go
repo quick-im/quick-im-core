@@ -64,6 +64,15 @@ var JaegerFlags = []cli.Flag{
 	},
 }
 
+var GatewayIpwriteFlags = []cli.Flag{
+	&cli.StringSliceFlag{
+		Name:    "gateway.ipWrite",
+		Value:   cli.NewStringSlice("0.0.0.0/0"),
+		Usage:   "gateway ipwrite",
+		EnvVars: []string{"IP_WRITE"},
+	},
+}
+
 var PgFlags = []cli.Flag{
 	&cli.StringFlag{
 		Name:    "pg.host",
@@ -85,13 +94,13 @@ var PgFlags = []cli.Flag{
 	},
 	&cli.StringFlag{
 		Name:    "pg.password",
-		Value:   "postgres",
+		Value:   "123456",
 		Usage:   "postgres password",
 		EnvVars: []string{"PG_PASSWORD"},
 	},
 	&cli.StringFlag{
 		Name:    "pg.dbname",
-		Value:   "postgres",
+		Value:   "quickim",
 		Usage:   "postgres dbname",
 		EnvVars: []string{"PG_DBNAME"},
 	},
@@ -341,6 +350,7 @@ func MergeConf(args *cli.Context) IMConf {
 	conf.Services.Persistence.Port = merge(args.IsSet("persistence.port") || !readFile, conf.Services.Persistence.Port, args.Int("persistence.port"))
 	conf.Gateway.IP = merge(args.IsSet("gateway.ip") || !readFile, conf.Gateway.IP, args.String("gateway.ip"))
 	conf.Gateway.Port = merge(args.IsSet("gateway.port") || !readFile, conf.Gateway.Port, args.Int("gateway.port"))
+	conf.Gateway.IPWrite = merge(args.IsSet("gateway.ipWrite") || !readFile, conf.Gateway.IPWrite, args.StringSlice("gateway.ipWrite"))
 	return conf
 }
 
