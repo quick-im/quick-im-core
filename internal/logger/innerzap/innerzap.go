@@ -79,7 +79,7 @@ func NewLoggerWithOpt(opts ...logOpt) *loggerOpt {
 		logPath:        "logs",
 		serviceName:    "all",
 		logLevel:       zap.DebugLevel,
-		disableConsole: false,
+		disableConsole: true,
 	}
 	for i := range opts {
 		opts[i](l)
@@ -108,6 +108,9 @@ func WithDisableConsole(disable bool) logOpt {
 func WithLogLevel(level zapcore.Level) logOpt {
 	return func(lo *loggerOpt) {
 		lo.logLevel = level
+		if level == zap.DebugLevel {
+			lo.disableConsole = false
+		}
 	}
 }
 

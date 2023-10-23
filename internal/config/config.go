@@ -71,6 +71,13 @@ var GatewayIpwriteFlags = []cli.Flag{
 		Usage:   "gateway ipwrite",
 		EnvVars: []string{"IP_WRITE"},
 	},
+	&cli.StringFlag{
+		Name:     "gateway.jwtKey",
+		Value:    "quickimkey",
+		Usage:    "gateway jwt key",
+		Required: true,
+		EnvVars:  []string{"GATEWAY_JWT_KEY"},
+	},
 }
 
 var PgFlags = []cli.Flag{
@@ -351,6 +358,7 @@ func MergeConf(args *cli.Context) IMConf {
 	conf.Gateway.IP = merge(args.IsSet("gateway.ip") || !readFile, conf.Gateway.IP, args.String("gateway.ip"))
 	conf.Gateway.Port = merge(args.IsSet("gateway.port") || !readFile, conf.Gateway.Port, args.Int("gateway.port"))
 	conf.Gateway.IPWrite = merge(args.IsSet("gateway.ipWrite") || !readFile, conf.Gateway.IPWrite, args.StringSlice("gateway.ipWrite"))
+	conf.Gateway.JwtKey = merge(args.IsSet("gateway.jwtKey") || !readFile, conf.Gateway.JwtKey, args.String("gateway.jwtKey"))
 	return conf
 }
 

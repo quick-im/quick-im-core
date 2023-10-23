@@ -18,3 +18,7 @@ services:
             - '4317:4317'
             - '4318:4318'
             - '9411:9411'
+            
+networks:
+  quick-im-network:
+    name: quick-im-network

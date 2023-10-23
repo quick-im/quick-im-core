@@ -8,6 +8,7 @@ import (
 
 	_ "embed"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/lib/pq"
 )
@@ -84,6 +85,35 @@ func WithMaxConns(maxConns int32) pgConnOpt {
 
 func (p *postgresClientOpt) GetDb() *pgxpool.Pool {
 	// postgres://user:password@127.0.0.1:5432/?Timezone=Asia%2FShanghai
+	// CREATE DATABASE IF NOT EXISTS quick-im;
+	c, err := pgx.Connect(context.Background(),
+		fmt.Sprintf(
+			"postgres://%s:%s@%s:%d/postgres?sslmode=disable&Timezone=Asia/Shanghai",
+			p.username,
+			p.password,
+			p.host,
+			p.port,
+		),
+	)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "[init] Unable to connect to database: %v\n", err)
+		os.Exit(1)
+	}
+	defer c.Close(context.Background())
+	var count int
+	row := c.QueryRow(context.Background(), `SELECT 1 FROM pg_database WHERE datname = $1`, p.dbName)
+	err = row.Scan(&count)
+	if err != nil {
+		if err != pgx.ErrNoRows {
+			fmt.Fprintf(os.Stderr, "[init step 2] Unable to create to database: %v\n", err)
+			os.Exit(1)
+		}
+		_, err = c.Exec(context.Background(), fmt.Sprintf("CREATE DATABASE %s", p.dbName))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "[init step 3] Unable to create to database: %v\n", err)
+			os.Exit(1)
+		}
+	}
 	conn, err := pgxpool.New(context.Background(),
 		fmt.Sprintf(
 			"postgres://%s:%s@%s:%d/%s?sslmode=disable&pool_min_conns=%d&pool_max_conns=%d&Timezone=Asia/Shanghai",

@@ -3,10 +3,17 @@ services:
   postgres:
     image: postgres:15.3-alpine3.18
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: 123456
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./data/postgres:/var/lib/postgresql/data
+    networks: ["quick-im-network"]
+    restart: always
+  rethinkdb:
+    image: rethinkdb
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./data/rethinkdb:/data
     networks: ["quick-im-network"]
     restart: always
   redis:
@@ -15,9 +22,9 @@ services:
       - ./data/redis:/data
     networks: ["quick-im-network"]
     restart: always
-  consul-server-1:
+  consul-server:
     image: consul:1.15
-    container_name: consul-server-1
+    container_name: consul-server
     ports:
       - "8500:8500"
     command: consul agent -server -bootstrap-expect=1 -ui -client=0.0.0.0 -data-dir=/consul/data

@@ -1,0 +1,143 @@
+version: '3'
+services:
+  gateway:
+    image: quickim/gateway
+    environment:
+      - IP=0.0.0.0
+      - PORT=8088
+      - IP_WRITE=0.0.0.0/0,127.0.0.1  # 用于保护inner接口，生产环境不建议使用0.0.0.0/0
+      - GATEWAY_JWT_KEY="quickim"
+      - JAEGER_ENABLE=false            # 开启链路追踪,需先部署jaeger，docker-compose.yaml：./jaejer/all-in-one.yaml
+      - JAEGER_HOST=jaeger-all-in-one
+      - JAEGER_PORT=6832
+      - CONSUL_SERVERS=consul-server:8500
+      - NATS_SERVERS=nats:4222
+      - LOG_PATH=./logs/
+      - LOG_LEVEL=-1
+    volumes:
+      - ./logs:/quickim/logs
+      # - ./config.toml:/:/quickim/config.toml
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - 8088:8088
+    networks: 
+      - quick-im-network
+    restart: always
+    
+  conversation:
+    image: quickim/conversation
+    environment:
+      - IP=conversation
+      - PORT=8016
+      - PG_HOST=postgres
+      - PG_PORT=5432
+      - PG_USERNAME=postgres
+      - PG_PASSWORD=123456
+      - PG_DBNAME=quickim
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_USERNAME=
+      - REDIS_PASSWORD=
+      - JAEGER_ENABLE=false            # 开启链路追踪,需先部署jaeger，docker-compose.yaml：./jaejer/all-in-one.yaml
+      - JAEGER_HOST=jaeger-all-in-one
+      - JAEGER_PORT=6832
+      - CONSUL_SERVERS=consul-server:8500
+      - NATS_SERVERS=nats:4222
+      - LOG_PATH=./logs/
+      - LOG_LEVEL=-1
+    volumes:
+      - ./logs:/quickim/logs
+      # - ./config.toml:/:/quickim/config.toml
+      - /etc/localtime:/etc/localtime:ro
+    networks: 
+      - quick-im-network
+    restart: always
+
+  msgbroker:
+    image: quickim/msgbroker
+    environment:
+      - IP=msgbroker
+      - PORT=8017
+      - JAEGER_ENABLE=false            # 开启链路追踪,需先部署jaeger，docker-compose.yaml：./jaejer/all-in-one.yaml
+      - JAEGER_HOST=jaeger-all-in-one
+      - JAEGER_PORT=6832
+      - CONSUL_SERVERS=consul-server:8500
+      - NATS_SERVERS=nats:4222
+      - LOG_PATH=./logs/
+      - LOG_LEVEL=-1
+    volumes:
+      - ./logs:/quickim/logs
+      # - ./config.toml:/:/quickim/config.toml
+      - /etc/localtime:/etc/localtime:ro
+    networks: 
+      - quick-im-network
+    restart: always
+
+  msghub:
+    image: quickim/msghub
+    environment:
+      - IP=msghub
+      - PORT=8019
+      - JAEGER_ENABLE=false            # 开启链路追踪,需先部署jaeger，docker-compose.yaml：./jaejer/all-in-one.yaml
+      - JAEGER_HOST=jaeger-all-in-one
+      - JAEGER_PORT=6832
+      - CONSUL_SERVERS=consul-server:8500
+      - NATS_SERVERS=nats:4222
+      - LOG_PATH=./logs/
+      - LOG_LEVEL=-1
+    volumes:
+      - ./logs:/quickim/logs
+      # - ./config.toml:/:/quickim/config.toml
+      - /etc/localtime:/etc/localtime:ro
+    networks: 
+      - quick-im-network
+    restart: always
+
+  msgid:
+    image: quickim/msgid
+    environment:
+      - IP=msgid
+      - PORT=8018
+      - JAEGER_ENABLE=false            # 开启链路追踪,需先部署jaeger，docker-compose.yaml：./jaejer/all-in-one.yaml
+      - JAEGER_HOST=jaeger-all-in-one
+      - JAEGER_PORT=6832
+      - CONSUL_SERVERS=consul-server:8500
+      - NATS_SERVERS=nats:4222
+      - LOG_PATH=./logs/
+      - LOG_LEVEL=-1
+    volumes:
+      - ./logs:/quickim/logs
+      # - ./config.toml:/:/quickim/config.toml
+      - /etc/localtime:/etc/localtime:ro
+    networks: 
+      - quick-im-network
+    restart: always
+
+  persistence:
+    image: quickim/persistence
+    environment:
+      - IP=persistence
+      - PORT=8015
+      - RETHINKDB_SERVERS=rethinkdb:28015
+      - RETHINKDB_DB=quickim
+      - RETHINKDB_AUTHKEY=
+      - RETHINKDB_USERNAME=
+      - RETHINKDB_PASSWORD=
+      - JAEGER_ENABLE=false            # 开启链路追踪,需先部署jaeger，docker-compose.yaml：./jaejer/all-in-one.yaml
+      - JAEGER_HOST=jaeger-all-in-one
+      - JAEGER_PORT=6832
+      - CONSUL_SERVERS=consul-server:8500
+      - NATS_SERVERS=nats:4222
+      - LOG_PATH=./logs/
+      - LOG_LEVEL=-1
+    volumes:
+      - ./logs:/quickim/logs
+      # - ./config.toml:/:/quickim/config.toml
+      - /etc/localtime:/etc/localtime:ro
+    networks: 
+      - quick-im-network
+    restart: always
+
+networks:
+  quick-im-network:
+    name: quick-im-network
