@@ -5,15 +5,14 @@
 package db
 
 import (
-	"time"
-
 	"github.com/jackc/pgx/v5/pgtype"
+	jtime "github.com/quick-im/quick-im-core/internal/jtime"
 )
 
 type Conversation struct {
 	ConversationID   string
 	LastMsgID        *string
-	LastSendTime     *time.Time
+	LastSendTime     pgtype.Timestamp
 	IsDelete         bool
 	ConversationType int64
 	LastSendSession  *string
@@ -32,7 +31,7 @@ type Message struct {
 	MsgID          string
 	ConversationID string
 	FromSession    int32
-	SendTime       pgtype.Timestamp
+	SendTime       jtime.Time
 	Status         int32
 	Type           int32
 	Content        *string

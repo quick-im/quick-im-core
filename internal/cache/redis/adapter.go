@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/quick-im/quick-im-core/internal/db"
 	"github.com/redis/go-redis/v9"
@@ -48,6 +49,7 @@ func (a *adapter) KeyExistInCache(key string) (bool, error) {
 }
 
 func (a *adapter) SyncConversationLastMsgId(conversationId, msgId string) error {
+	conversationId = fmt.Sprintf("%s-lastonemsg", conversationId)
 	lastId, err := a.Client.Get(context.Background(), conversationId).Result()
 	if err != redis.Nil && err != nil {
 		return err
@@ -62,15 +64,19 @@ func (a *adapter) SyncConversationLastMsgId(conversationId, msgId string) error 
 }
 
 func (a *adapter) GetConversationLastMsgId(conversationId string) (string, error) {
+	conversationId = fmt.Sprintf("%s-lastonemsg", conversationId)
 	return a.Client.Get(context.Background(), conversationId).Result()
 }
 
 func (a *adapter) SetConversationInfo(conversationId string, info db.Conversation) error {
+	// conversationId = fmt.Sprintf("%s-info", conversationId)
 	panic("todo impl")
 }
 func (a *adapter) GetConversationInfo(conversationId string) (db.Conversation, error) {
+	// conversationId = fmt.Sprintf("%s-info", conversationId)
 	panic("todo impl")
 }
 func (a *adapter) UnSetConversationInfo(conversationId string) error {
+	// conversationId = fmt.Sprintf("%s-info", conversationId)
 	panic("todo impl")
 }

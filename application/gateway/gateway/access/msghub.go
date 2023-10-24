@@ -73,6 +73,15 @@ func SendMsgHandler(ctx context.Context) http.HandlerFunc {
 			_ = encoder.Encode(quickerr.ErrInternalServiceCallFailed)
 			return
 		}
+		err := conversationService.Call(ctx, conversation.SERVICE_UPDATE_CONVERSATION_LASTMSG, conversation.UpdateConversationLastMsgArgs{
+			ConversationId:  clientArgs.ConversationID,
+			MsgId:           msgIdReply.MsgID,
+			LastTime:        time.Now(),
+			LastSendSession: claims.Sid,
+		}, &conversation.UpdateConversationLastMsgReply{})
+		if err != nil {
+			log.Error("Gateway method: SendMsgHandler Fn conversationService.Call:conversation.SERVICE_UPDATE_CONVERSATION_LASTMSG ,err: ", err.Error())
+		}
 		_ = encoder.Encode(quickerr.HttpResponeWarp(msgIdReply))
 	}
 }

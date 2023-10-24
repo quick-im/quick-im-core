@@ -7,7 +7,8 @@ package db
 
 import (
 	"context"
-	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const checkJoinedonversation = `-- name: CheckJoinedonversation :one
@@ -349,11 +350,11 @@ type SessionJoinsConversationUseCopyFromParams struct {
 const updateConversationLastMsg = `-- name: UpdateConversationLastMsg :exec
 UPDATE public.conversations
 SET last_msg_id= $2::varchar, last_send_time=$1, last_send_session= $3::varchar
-WHERE conversation_id= $4::varchar AND last_msg_id < $2::varchar
+WHERE conversation_id= $4::varchar AND (last_msg_id < $2::varchar OR last_msg_id ISNULL)
 `
 
 type UpdateConversationLastMsgParams struct {
-	LastSendTime    *time.Time
+	LastSendTime    pgtype.Timestamp
 	LastMsgID       string
 	LastSendSession string
 	ConversationID  string
@@ -372,7 +373,7 @@ func (q *Queries) UpdateConversationLastMsg(ctx context.Context, arg UpdateConve
 const updateSessionLastRecvMsg = `-- name: UpdateSessionLastRecvMsg :exec
 UPDATE public.conversation_session_id
 SET last_recv_msg_id= $1::varchar
-WHERE conversation_id= $2::varchar AND session_id IN ($3::varchar) AND last_recv_msg_id < $1::varchar
+WHERE conversation_id= $2::varchar AND session_id IN ($3::varchar) AND (last_recv_msg_id < $1::varchar OR last_recv_msg_id ISNULL)
 `
 
 type UpdateSessionLastRecvMsgParams struct {

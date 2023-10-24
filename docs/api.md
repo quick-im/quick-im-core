@@ -30,7 +30,7 @@
         "MsgId": "EDCZL-SY32-243Y-VWQ",
         "ConversationID": "87ba7679-b682-47e7-8499-0385dda22b66",
         "FromSession": "test-client-session-id",
-        "SendTime": "2023-10-22T22:59:04.069413421+08:00",
+        "SendTime": 1698119710632897,
         "Status": 0,
         "Type": 1,
         "Content": "消息内容"
@@ -134,7 +134,7 @@
         {
             "ConversationID":   "会话ID",
             "LastMsgID":        "EDCZR-GL2A-243Y-VWQ",
-            "LastSendTime":     "2023-10-22T22:59:04.069413421+08:00",
+            "LastSendTime":     1698119710632897,
             "IsDelete":         false,
             "ConversationType": 0,
             "LastSendSession":  "87ba7679-b682-47e7-8499-0385dda22b66",
@@ -175,7 +175,7 @@
     ```json
     {
         "conversation_type": 0, // int64 会话类型
-    }`
+    }
     ```
     - **Response**:
     ```json
@@ -367,7 +367,7 @@
                     "MsgId": "",
                     "ConversationID": "",
                     "FromSession": "",
-                    "SendTime": "2023-10-22T22:59:04.069413421+08:00",
+                    "SendTime": 1698119710632897,
                     "Status": 0,
                     "Type":0"",
                     "Content": "",
@@ -392,14 +392,14 @@
     ```json
     {
         "code": 0,
-        "error": "xxx错误", // code不为0时返回错误信息
+        "error": "xxx错误",
         "data": {
             "Msg": [
                 {
                     "MsgId": "",
                     "ConversationID": "",
                     "FromSession": "",
-                    "SendTime": "2023-10-22T22:59:04.069413421+08:00",
+                    "SendTime": 1698119710632897,
                     "Status": 0,
                     "Type":0"",
                     "Content": "",
@@ -431,7 +431,7 @@
                     "MsgId": "",
                     "ConversationID": "",
                     "FromSession": "",
-                    "SendTime": "2023-10-22T22:59:04.069413421+08:00",
+                    "SendTime": 1698119710632897,
                     "Status": 0,
                     "Type":0"",
                     "Content": "",
@@ -462,7 +462,7 @@
                     "MsgId": "",
                     "ConversationID": "",
                     "FromSession": "",
-                    "SendTime": "2023-10-22T22:59:04.069413421+08:00",
+                    "SendTime": 1698119710632897,
                     "Status": 0,
                     "Type":0"",
                     "Content": "",
@@ -493,7 +493,7 @@
                     "MsgId": "",
                     "ConversationID": "",
                     "FromSession": "",
-                    "SendTime": "2023-10-22T22:59:04.069413421+08:00",
+                    "SendTime": 1698119710632897,
                     "Status": 0,
                     "Type":0"",
                     "Content": "",

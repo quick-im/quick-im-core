@@ -10,7 +10,7 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
+	jtime "github.com/quick-im/quick-im-core/internal/jtime"
 )
 
 var (
@@ -174,7 +174,7 @@ type SaveMsgToDbParams struct {
 	MsgID          string
 	ConversationID string
 	FromSession    int32
-	SendTime       pgtype.Timestamp
+	SendTime       jtime.Time
 	Status         int32
 	Type           int32
 	Content        *string

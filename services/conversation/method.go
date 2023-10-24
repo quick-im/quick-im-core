@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/quick-im/quick-im-core/internal/contant"
 	"github.com/quick-im/quick-im-core/internal/db"
@@ -337,7 +338,7 @@ func (s *rpcxServer) SetArchiveConversations(ctx context.Context) SetArchiveConv
 type UpdateConversationLastMsgArgs struct {
 	ConversationId  string
 	MsgId           string
-	LastTime        *time.Time
+	LastTime        time.Time
 	LastSendSession string
 }
 
@@ -355,7 +356,10 @@ func (s *rpcxServer) UpdateConversationLastMsg(ctx context.Context) UpdateConver
 	logger := s.GetLogger()
 	return func(ctx context.Context, args UpdateConversationLastMsgArgs, reply *UpdateConversationLastMsgReply) error {
 		err := dbObj.UpdateConversationLastMsg(ctx, db.UpdateConversationLastMsgParams{
-			LastSendTime:    args.LastTime,
+			LastSendTime: pgtype.Timestamp{
+				Time:  args.LastTime,
+				Valid: true,
+			},
 			LastMsgID:       args.MsgId,
 			LastSendSession: args.LastSendSession,
 			ConversationID:  args.ConversationId,

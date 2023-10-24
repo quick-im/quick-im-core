@@ -16,7 +16,12 @@ overrides:
     overrides:
       - db_type: "pg_catalog.timestamp"
         go_type:
-          import: "time"
+          import: "github.com/quick-im/quick-im-core/internal/jtime"
+          package: "jtime"
           type: "Time"
-          pointer: true
-        nullable: true
+      # - db_type: "pg_catalog.timestamp"
+      #   go_type:
+      #     import: "time"
+      #     type: "Time"
+      #     pointer: true
+      #   nullable: true

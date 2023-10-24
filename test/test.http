@@ -29,3 +29,15 @@ Content-Type: {{contentType}}
 	"type": 1,
 	"content": "消息内容"
 }
+
+###
+
+# @name get_last_one_msg
+POST http://{{host}}//get_conversation_lastone_msg HTTP/1.1
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+    "conversation_id": "87ba7679-b682-47e7-8499-0385dda22b66",
+    "desc": true
+}

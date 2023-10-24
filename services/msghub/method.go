@@ -8,6 +8,7 @@ import (
 	"github.com/quick-im/quick-im-core/internal/config"
 	"github.com/quick-im/quick-im-core/internal/contant"
 	"github.com/quick-im/quick-im-core/internal/helper"
+	"github.com/quick-im/quick-im-core/internal/jtime"
 	"github.com/quick-im/quick-im-core/internal/msgdb/model"
 	"github.com/quick-im/quick-im-core/internal/rpcx"
 	"github.com/quick-im/quick-im-core/services/msgbroker"
@@ -36,7 +37,7 @@ func (r *rpcxServer) SendMsg(ctx context.Context) sendMsgFn {
 			MsgId:          args.MsgId,
 			ConversationID: args.ConversationID,
 			FromSession:    args.FromSession,
-			SendTime:       args.SendTime,
+			SendTime:       jtime.Time{Time: args.SendTime},
 			Status:         0,
 			Type:           args.MsgType,
 			Content:        string(args.Content),
@@ -84,7 +85,7 @@ func (r *rpcxServer) SendMsg(ctx context.Context) sendMsgFn {
 				MsgId:          args.MsgId,
 				ConversationID: args.ConversationID,
 				FromSession:    args.FromSession,
-				SendTime:       args.SendTime,
+				SendTime:       jtime.Time{Time: args.SendTime},
 				Status:         0,
 				Type:           args.MsgType,
 				Content:        string(args.Content),

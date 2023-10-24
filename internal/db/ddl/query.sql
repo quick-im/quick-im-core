@@ -55,13 +55,13 @@ WHERE session_id = $1 AND conversation_id=$2;
 -- name: UpdateSessionLastRecvMsg :exec
 UPDATE public.conversation_session_id
 SET last_recv_msg_id= @last_msg_id::varchar
-WHERE conversation_id= @conversation_id::varchar AND session_id IN (@session_id::varchar) AND last_recv_msg_id < @last_msg_id::varchar;
+WHERE conversation_id= @conversation_id::varchar AND session_id IN (@session_id::varchar) AND (last_recv_msg_id < @last_msg_id::varchar OR last_recv_msg_id ISNULL);
 
 
 -- name: UpdateConversationLastMsg :exec
 UPDATE public.conversations
 SET last_msg_id= @last_msg_id::varchar, last_send_time=$1, last_send_session= @last_send_session::varchar
-WHERE conversation_id= @conversation_id::varchar AND last_msg_id < @last_msg_id::varchar;
+WHERE conversation_id= @conversation_id::varchar AND (last_msg_id < @last_msg_id::varchar OR last_msg_id ISNULL);
 
 -- name: SaveMsgToDb :batchexec
 INSERT INTO public.messages
